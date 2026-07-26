@@ -1,6 +1,6 @@
 import { redirect, isRedirect } from '@sveltejs/kit';
 import { getGoogleOAuth, generateId } from '$lib/server/auth';
-import { sendAdminNotification } from '$lib/server/email';
+import { sendAdminNotification, sendWelcomePendingEmail, sendUserApprovedEmail } from '$lib/server/email';
 import { env } from '$env/dynamic/private';
 import type { RequestHandler } from './$types';
 
@@ -59,10 +59,12 @@ export const GET: RequestHandler = async (event) => {
 
 			// Admins are always approved
 			const status = (isAdmin || autoApprove) ? 'APPROVED' : 'PENDING';
+			
+			const approvalToken = status === 'PENDING' ? generateId(32) : null;
 
 			await db.prepare(
-				'INSERT INTO users (id, google_id, email, name, picture, role, status) VALUES (?, ?, ?, ?, ?, ?, ?)'
-			).bind(userId, googleUser.sub, googleUser.email, googleUser.name, googleUser.picture, role, status).run();
+				'INSERT INTO users (id, google_id, email, name, picture, role, status, approval_token) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+			).bind(userId, googleUser.sub, googleUser.email, googleUser.name, googleUser.picture, role, status, approvalToken).run();
 
 			// Get notification emails setting
 			let adminEmailsOverride = undefined;
@@ -73,10 +75,24 @@ export const GET: RequestHandler = async (event) => {
 				console.error("Failed to read admin notification emails setting", e);
 			}
 
-			// Send email via Resend in the background for ALL new signups
-			event.platform?.context?.waitUntil(
-				sendAdminNotification(googleUser.email, googleUser.name, adminEmailsOverride)
-			);
+			// Send appropriate emails
+			if (status === 'PENDING') {
+				const approvalUrl = `${env.APP_URL || 'http://localhost:5173'}/api/auth/approve-from-email?token=${approvalToken}&userId=${userId}`;
+				event.platform?.context?.waitUntil(
+					Promise.all([
+						sendAdminNotification(googleUser.email, googleUser.name, adminEmailsOverride, approvalUrl),
+						sendWelcomePendingEmail(googleUser.email, googleUser.name)
+					])
+				);
+			} else {
+				// Auto-approved
+				event.platform?.context?.waitUntil(
+					Promise.all([
+						sendAdminNotification(googleUser.email, googleUser.name, adminEmailsOverride),
+						sendUserApprovedEmail(googleUser.email, googleUser.name)
+					])
+				);
+			}
 		}
 
 		// 2. Create session

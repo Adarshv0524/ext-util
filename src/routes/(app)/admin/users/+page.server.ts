@@ -1,5 +1,6 @@
 import type { PageServerLoad, Actions } from './$types';
 import { error } from '@sveltejs/kit';
+import { sendUserApprovedEmail, sendUserBannedEmail } from '$lib/server/email';
 
 export const load: PageServerLoad = async ({ locals, platform }) => {
 	const db = platform?.env?.MEDIA_DB;
@@ -50,13 +51,34 @@ export const actions: Actions = {
 
 		const data = await request.formData();
 		const userId = data.get('userId') as string;
-		const status = data.get('status') as string;
+		const newStatus = data.get('status') as string;
 
-		if (!['PENDING', 'APPROVED', 'BANNED'].includes(status)) {
+		if (!['PENDING', 'APPROVED', 'BANNED'].includes(newStatus)) {
 			throw error(400, "Invalid status");
 		}
 
-		await db.prepare("UPDATE users SET status = ? WHERE id = ?").bind(status, userId).run();
+		// Fetch the current user to see their email and previous status
+		const user = await db.prepare('SELECT * FROM users WHERE id = ?').bind(userId).first<{ email: string; name: string; status: string }>();
+		if (!user) {
+			throw error(404, "User not found");
+		}
+
+		// Clear approval_token if they are approved
+		if (newStatus === 'APPROVED') {
+			await db.prepare("UPDATE users SET status = ?, approval_token = NULL WHERE id = ?").bind(newStatus, userId).run();
+		} else {
+			await db.prepare("UPDATE users SET status = ? WHERE id = ?").bind(newStatus, userId).run();
+		}
+
+		// Only send email if status actually changed
+		if (user.status !== newStatus) {
+			if (newStatus === 'APPROVED') {
+				platform?.context?.waitUntil(sendUserApprovedEmail(user.email, user.name));
+			} else if (newStatus === 'BANNED') {
+				platform?.context?.waitUntil(sendUserBannedEmail(user.email, user.name));
+			}
+		}
+
 		return { success: true };
 	}
 };
