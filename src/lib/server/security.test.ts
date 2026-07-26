@@ -5,7 +5,7 @@ import {
 	safeEqual,
 	checkMagicBytes
 } from './security';
-import { ASSET_SIZE_LIMITS, ALLOWED_MIME_TYPES } from './config';
+import { ASSET_SIZE_LIMITS, ALLOWED_MIME_TYPES } from '$lib/constants';
 
 describe('Security Engine & HMAC Validation', () => {
 	it('should generate deterministic HMAC tokens and verify them successfully', async () => {

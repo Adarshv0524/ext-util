@@ -1,6 +1,7 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 import { checkMagicBytes, verifyUploadToken } from '$lib/server/security';
-import { ASSET_SIZE_LIMITS, getEnv, CORE_SETTINGS } from '$lib/server/config';
+import { getEnv } from '$lib/server/config';
+import { ASSET_SIZE_LIMITS, CORE_SETTINGS } from '$lib/constants';
 
 // In-memory binary storage fallback when R2 bucket binding is not present (e.g. local test mode)
 const localR2Mock = new Map<string, { body: Uint8Array; mime: string }>();

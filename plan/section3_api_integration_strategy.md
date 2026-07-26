@@ -2,7 +2,7 @@
 ### Awadhi Literature Platform — Decoupled Image Upload Microservice
 
 > [!IMPORTANT]
-> This section describes the **Presigned URL Pattern** for client-direct R2 uploads. The FastAPI application server never receives binary file data — it only orchestrates tokens and commits metadata. This is the critical architectural invariant that eliminates memory pressure and scales independently of the main API.
+> This section describes the **Presigned URL Pattern** for client-direct R2 uploads. The SvelteKit application server never receives binary file data — it only orchestrates tokens and commits metadata. This is the critical architectural invariant that eliminates memory pressure and scales independently of the main API.
 
 ---
 
@@ -11,7 +11,7 @@
 ```mermaid
 sequenceDiagram
     participant C as Client (SvelteKit)
-    participant F as FastAPI
+    participant F as SvelteKit
     participant W as CF Worker
     participant R as Cloudflare R2
 
@@ -168,7 +168,7 @@ async def request_upload_token(
     current_user=Depends(get_current_user),
     _rl=Depends(rate_limit(key="upload-token", max_per_minute=20)),
 ):
-    # §11 of FastAPI standards: permission check before any business logic
+    # §11 of SvelteKit standards: permission check before any business logic
     role_at_least(current_user, required_role="contributor")
 
     expires_ts = int(time.time()) + TOKEN_EXPIRY_SECONDS
@@ -215,7 +215,7 @@ async def request_upload_token(
 #### `media_assets` Table Schema (Alembic Migration)
 
 > [!NOTE]
-> Schema change announcement per §12 of FastAPI standards. The migration below adds a new `media_assets` table. It touches no existing tables.
+> Schema change announcement per §12 of SvelteKit standards. The migration below adds a new `media_assets` table. It touches no existing tables.
 
 ```sql
 -- Alembic-generated: add_media_assets_table
@@ -242,13 +242,13 @@ CREATE TABLE media_assets (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
 
-**Garbage Collection Strategy:** A scheduled task (future Celery/arq job, per §7 of FastAPI standards) should `DELETE FROM media_assets WHERE is_committed = 0 AND expires_at < NOW()` and call the R2 API to purge the corresponding objects. Write the cleanup as a plain callable `purge_expired_assets(db)` so the job queue addition is a one-liner.
+**Garbage Collection Strategy:** A scheduled task (future Celery/arq job, per §7 of SvelteKit standards) should `DELETE FROM media_assets WHERE is_committed = 0 AND expires_at < NOW()` and call the R2 API to purge the corresponding objects. Write the cleanup as a plain callable `purge_expired_assets(db)` so the job queue addition is a one-liner.
 
 ---
 
 ### Phase 2 — Direct Upload (Client → Cloudflare Worker → R2)
 
-The client sends a `PUT` request directly to the Cloudflare Worker endpoint. The FastAPI server is completely out of this data path.
+The client sends a `PUT` request directly to the Cloudflare Worker endpoint. The SvelteKit server is completely out of this data path.
 
 **Request:**
 ```
@@ -529,8 +529,8 @@ binding    = "TOKEN_KV"
 id         = "<your-kv-namespace-id>"
 
 [vars]
-CDN_BASE_URL    = "https://media.awadhi.in"
-ALLOWED_ORIGINS = "https://awadhi.in,https://www.awadhi.in"
+CDN_BASE_URL    = "https://util.avadhya.in"
+ALLOWED_ORIGINS = "https://avadhya.in,https://www.avadhya.in"
 ```
 
 ### Worker Implementation
@@ -714,7 +714,7 @@ function corsResponse(response: Response, origin: string, env: Env): Response {
 ## D. SvelteKit Frontend Service Functions
 
 > [!IMPORTANT]
-> Per §7 of the Svelte Frontend Standards: **all HTTP calls go through `src/lib/services/api.ts`**. Components never call `fetch` directly. The functions below live in `src/lib/services/media.ts` and use the shared `api` client for FastAPI calls. Direct R2 PUT bypasses `api.ts` (correct — it targets a different origin with no auth header).
+> Per §7 of the Svelte Frontend Standards: **all HTTP calls go through `src/lib/services/api.ts`**. Components never call `fetch` directly. The functions below live in `src/lib/services/media.ts` and use the shared `api` client for SvelteKit calls. Direct R2 PUT bypasses `api.ts` (correct — it targets a different origin with no auth header).
 
 ### TypeScript Interfaces
 
@@ -723,7 +723,7 @@ function corsResponse(response: Response, origin: string, env: Env): Response {
 
 import { api } from "./api";
 
-// ── Response types mirroring FastAPI schemas ─────────────────────────────────
+// ── Response types mirroring SvelteKit schemas ─────────────────────────────────
 
 export interface UploadTokenRequest {
   asset_type: AssetType;
@@ -762,7 +762,7 @@ export type EntityType = "article" | "poet" | "author" | "collection";
 // ── Service functions ─────────────────────────────────────────────────────────
 
 /**
- * Phase 1: Request a time-limited upload token from FastAPI.
+ * Phase 1: Request a time-limited upload token from SvelteKit.
  * Returns presigned upload_url + permanent cdn_url.
  */
 export async function requestUploadToken(
@@ -808,7 +808,7 @@ export async function uploadToR2(
 }
 
 /**
- * Phase 3: Tell FastAPI to flip is_committed and update the entity's URL column.
+ * Phase 3: Tell SvelteKit to flip is_committed and update the entity's URL column.
  * Must NOT be called for asset_type="article_inline" — see §B of the API strategy.
  */
 export async function commitAsset(
@@ -931,7 +931,7 @@ export const mediaUploadStore = createMediaUploadStore();
 > [!NOTE]
 > Frontend UX actions assume Svelte components consume errors via `mediaUploadStore.error` and display using the project's existing `Toast` or `Modal` components. Raw error codes are never surfaced to the user.
 
-### Phase 1 Errors (FastAPI `/upload-token`)
+### Phase 1 Errors (SvelteKit `/upload-token`)
 
 | Error | HTTP Status | Response Schema | Frontend UX Action |
 |---|---|---|---|
@@ -955,7 +955,7 @@ export const mediaUploadStore = createMediaUploadStore();
 | Client network drop | `0` (XHR error) | — | Toast: "Network error. Check your connection and try again." |
 | Upload progress stalled > 30s | timeout | — | Abort XHR, toast: "Upload timed out. Try a smaller file or check your connection." |
 
-### Phase 3 Errors (FastAPI `/commit`)
+### Phase 3 Errors (SvelteKit `/commit`)
 
 | Error | HTTP Status | Response Schema | Frontend UX Action |
 |---|---|---|---|
@@ -1001,7 +1001,7 @@ export function validateFileClient(
 ```
 
 > [!TIP]
-> Run `validateFileClient` on file selection (before the first network call). This eliminates a round-trip to FastAPI for the most common user errors (wrong format, oversized file) and gives instant feedback.
+> Run `validateFileClient` on file selection (before the first network call). This eliminates a round-trip to SvelteKit for the most common user errors (wrong format, oversized file) and gives instant feedback.
 
 ---
 
@@ -1009,8 +1009,8 @@ export function validateFileClient(
 
 | Variable | Owner | Description |
 |---|---|---|
-| `WORKER_HMAC_SECRET` | FastAPI + CF Worker | Shared HMAC secret for signing upload tokens. Must match on both sides. Rotate via `wrangler secret put`. |
-| `WORKER_BASE_URL` | FastAPI | Base URL of the CF Worker, e.g. `https://media-worker.awadhi.workers.dev` |
-| `CDN_BASE_URL` | FastAPI + Frontend | Public CDN root, e.g. `https://media.awadhi.in` |
+| `WORKER_HMAC_SECRET` | SvelteKit + CF Worker | Shared HMAC secret for signing upload tokens. Must match on both sides. Rotate via `wrangler secret put`. |
+| `WORKER_BASE_URL` | SvelteKit | Base URL of the CF Worker, e.g. `https://media-worker.awadhi.workers.dev` |
+| `CDN_BASE_URL` | SvelteKit + Frontend | Public CDN root, e.g. `https://util.avadhya.in` |
 | `ALLOWED_ORIGINS` | CF Worker | Comma-separated list of allowed CORS origins |
 | `R2_BUCKET` | CF Worker binding | Wrangler-bound R2 bucket (not an env var — declared in `wrangler.toml`) |

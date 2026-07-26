@@ -6,7 +6,7 @@
 
 ## Preamble: Grounding in the Real Schema
 
-The Awadhi platform currently runs a **29-table MySQL schema** (SQLAlchemy 2.0 ORM, Alembic-managed, collation `utf8mb4_unicode_ci`). The tables directly touched by image upload are:
+The Awadhi platform currently runs a **29-table Cloudflare D1 schema** (SQLAlchemy 2.0 ORM, Alembic-managed, collation `utf8mb4_unicode_ci`). The tables directly touched by image upload are:
 
 | Table | Current image column(s) | Type in DB |
 |---|---|---|
@@ -21,25 +21,25 @@ The Awadhi platform currently runs a **29-table MySQL schema** (SQLAlchemy 2.0 O
 
 ---
 
-## A. Philosophy: What NOT to Store in MySQL
+## A. Philosophy: What NOT to Store in Cloudflare D1
 
 ### A.1 — Never Store Binary Image Data
 
-MySQL is an ACID-compliant relational store optimised for structured, indexed, row-level data. It is categorically the wrong tool for binary blobs.
+Cloudflare D1 is an ACID-compliant relational store optimised for structured, indexed, row-level data. It is categorically the wrong tool for binary blobs.
 
 | What to avoid | Why |
 |---|---|
 | `BLOB` / `LONGBLOB` columns containing raw image bytes | Inflates InnoDB tablespace. Each `SELECT *` on a wide table transfers megabytes of useless binary data to the application layer. Backup files balloon. Point-in-time recovery slows dramatically. |
-| `TEXT` columns containing Base64-encoded images | Base64 adds ~33 % overhead over raw bytes. Stored in-row, it blows the `innodb_page_size` (16 KB default); MySQL must write the value to off-page overflow pages (via `DYNAMIC` row format), causing an extra page read per row. The previous migration `7de4e68c3755` introduced exactly this risk; it must not be used this way. |
-| JSON fields containing image data URIs | Same as base64 — compounded by the JSON parsing overhead and the loss of MySQL's ability to use covering indexes on adjacent columns. |
+| `TEXT` columns containing Base64-encoded images | Base64 adds ~33 % overhead over raw bytes. Stored in-row, it blows the `innodb_page_size` (16 KB default); Cloudflare D1 must write the value to off-page overflow pages (via `DYNAMIC` row format), causing an extra page read per row. The previous migration `7de4e68c3755` introduced exactly this risk; it must not be used this way. |
+| JSON fields containing image data URIs | Same as base64 — compounded by the JSON parsing overhead and the loss of Cloudflare D1's ability to use covering indexes on adjacent columns. |
 | Externally-fetched image bytes cached in `TEXT` | Defeats CDN caching. Every page load becomes a DB round-trip. |
 
-### A.2 — What MySQL SHOULD Store
+### A.2 — What Cloudflare D1 SHOULD Store
 
-MySQL's role in the image pipeline is limited to **metadata pointers**:
+Cloudflare D1's role in the image pipeline is limited to **metadata pointers**:
 
 ```
-MySQL                  Cloudflare R2
+Cloudflare D1                  Cloudflare R2
 ──────────────────     ────────────────────────────────────────────
 VARCHAR(500) URL  ───▶  https://pub.awadhi.app/r2/users/42/avatar.webp
                                          ▲
@@ -47,7 +47,7 @@ VARCHAR(500) URL  ───▶  https://pub.awadhi.app/r2/users/42/avatar.webp
                                    (CDN-fronted, immutable keys)
 ```
 
-The string in MySQL is:
+The string in Cloudflare D1 is:
 - **Immutable once written** (R2 object keys never change after commit)
 - **Fast to `SELECT`** (fits inside the B-tree leaf page, zero overflow)
 - **Indexable** (for deduplication or orphan queries if needed)
@@ -295,7 +295,7 @@ CREATE TABLE IF NOT EXISTS `media_assets` (
         ON UPDATE   CASCADE,
 
     -- Soft-enforce: committed assets must have entity info
-    -- (Hard enforcement via app layer; MySQL CHECK constraints added for documentation)
+    -- (Hard enforcement via app layer; Cloudflare D1 CHECK constraints added for documentation)
     CONSTRAINT  `chk_committed_has_entity`
         CHECK (
             `is_committed` = 0
@@ -441,7 +441,7 @@ class MediaAsset(Base):
 |---|---|---|---|
 | `PRIMARY` | `id` | PK (clustered) | Row retrieval by surrogate key; BIGINT for future scale |
 | `uq_media_assets_r2_key` | `r2_object_key` | UNIQUE | Prevents duplicate registration of the same R2 key; used by the commit flow to look up the row by key after client confirmation |
-| `idx_media_orphan_sweep` | `(is_committed, expires_at)` | Composite | Core query for the hourly cleanup job: `WHERE is_committed = 0 AND expires_at < NOW()`. Leading column is a low-cardinality boolean — MySQL will use it as a range filter into the timestamp column |
+| `idx_media_orphan_sweep` | `(is_committed, expires_at)` | Composite | Core query for the hourly cleanup job: `WHERE is_committed = 0 AND expires_at < NOW()`. Leading column is a low-cardinality boolean — Cloudflare D1 will use it as a range filter into the timestamp column |
 | `idx_media_uploader` | `(uploader_user_id, asset_type)` | Composite | Supports "show all images uploaded by user X" and "show all avatars uploaded by user X" — profile management UI |
 | `idx_media_entity` | `(associated_entity_type, associated_entity_id)` | Composite | Supports cascade-on-entity-delete queries: "find all R2 objects associated with author id=7" |
 
@@ -590,7 +590,7 @@ def upgrade() -> None:
 
     # ── 4. works ────────────────────────────────────────────────────────
     # Rename + revert: cover_image_url TEXT → cover_url VARCHAR(500)
-    # MySQL does not support RENAME COLUMN before 8.0; use batch_alter for portability.
+    # Cloudflare D1 does not support RENAME COLUMN before 8.0; use batch_alter for portability.
     with op.batch_alter_table("works") as batch_op:
         batch_op.alter_column(
             "cover_image_url",
@@ -636,7 +636,7 @@ def downgrade() -> None:
     op.drop_index("idx_media_uploader",     table_name="media_assets")
     op.drop_index("idx_media_orphan_sweep", table_name="media_assets")
     op.drop_table("media_assets")
-    # Drop the ENUM type (MySQL auto-drops with table; explicit for Postgres compat)
+    # Drop the ENUM type (Cloudflare D1 auto-drops with table; explicit for Postgres compat)
     sa.Enum(name="assettype").drop(op.get_bind(), checkfirst=True)
 ```
 
@@ -645,7 +645,7 @@ def downgrade() -> None:
 | Change | Risk Level | Mitigation |
 |---|---|---|
 | `CREATE TABLE media_assets` | ✅ **Zero** | Purely additive. No existing query breaks. |
-| `ADD COLUMN cover_url` (users, authors) | ✅ **Zero** | Nullable column add is an online metadata-only DDL in MySQL 8.0+ InnoDB (no table copy). |
+| `ADD COLUMN cover_url` (users, authors) | ✅ **Zero** | Nullable column add is an online metadata-only DDL in Cloudflare D1 8.0+ InnoDB (no table copy). |
 | `ADD COLUMN thumbnail_url` (authors) | ✅ **Zero** | Same as above. |
 | `ALTER COLUMN TEXT → VARCHAR(500)` (users, authors, works) | 🟡 **Low** | InnoDB may require a table rebuild if the column has overflow pages. Test on a data snapshot first. Existing data that fits in 500 chars (all valid R2 URLs) is unaffected. Any pre-existing base64 blob in `avatar_url` would be **truncated** — audit for these rows before running. |
 | `RENAME cover_image_url → cover_url` (works) | 🔴 **Medium** | Any raw SQL string, Pydantic schema field, Alembic `existing_type` mismatch, or frontend key referencing `cover_image_url` will break silently. A grep across the codebase is mandatory before deployment. |
@@ -689,7 +689,7 @@ pytest backend/tests/ -x -q
 
 | Item | Decision |
 |---|---|
-| Binary/Base64 in MySQL | ❌ Never. R2 handles bytes; MySQL stores URL strings only. |
+| Binary/Base64 in Cloudflare D1 | ❌ Never. R2 handles bytes; Cloudflare D1 stores URL strings only. |
 | URL column type | `VARCHAR(500)` — bounded, in-page, indexable. Not `TEXT`. |
 | `users.cover_url` | ✅ New nullable column. |
 | `authors.cover_url` + `thumbnail_url` | ✅ Two new nullable columns for distinct rendering contexts. |

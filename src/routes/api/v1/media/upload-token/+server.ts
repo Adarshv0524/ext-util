@@ -1,6 +1,7 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 import { generateUploadToken } from '$lib/server/security';
-import { ALLOWED_MIME_TYPES, ASSET_SIZE_LIMITS, CORE_SETTINGS, getEnv } from '$lib/server/config';
+import { getEnv } from '$lib/server/config';
+import { ALLOWED_MIME_TYPES, ASSET_SIZE_LIMITS, CORE_SETTINGS } from '$lib/constants';
 import { createUncommittedAsset } from '$lib/server/db';
 
 export const POST: RequestHandler = async ({ request, platform, locals }) => {

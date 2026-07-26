@@ -4,10 +4,14 @@
  * timing-safe string comparison, and magic-byte binary MIME inspection.
  */
 
-import { ENV_DEFAULTS } from './config';
+import { ENV_DEFAULTS } from '$lib/constants';
 
 /**
  * Timing-safe string comparison to prevent timing side-channel attacks.
+ * 
+ * @param a The first string (usually the generated signature)
+ * @param b The second string (usually the provided signature)
+ * @returns true if the strings match exactly, without leaking length/match timing.
  */
 export function safeEqual(a: string, b: string): boolean {
 	if (a.length !== b.length) return false;
@@ -35,7 +39,14 @@ async function getHmacKey(secret: string): Promise<CryptoKey> {
 
 /**
  * Generates an HMAC-SHA256 signature token for upload requests.
- * Payload format: {object_key}:{user_id}:{mime_type}:{expires_at}
+ * Payload format: `{objectKey}:{userId}:{mimeType}:{expiresAt}`
+ * 
+ * @param objectKey The deterministic Cloudflare R2 key for the file (e.g. `uploads/user_avatar/123_abc.png`)
+ * @param userId The ID of the user uploading the file
+ * @param mimeType The exact MIME type requested (e.g. `image/png`)
+ * @param expiresAt The Unix timestamp (in seconds) when this token should expire
+ * @param secret The secret HMAC key used to sign the token (from environment variables)
+ * @returns A hexadecimal string representing the HMAC-SHA256 signature
  */
 export async function generateUploadToken(
 	objectKey: string,
@@ -54,7 +65,15 @@ export async function generateUploadToken(
 }
 
 /**
- * Verifies an HMAC-SHA256 signature token and checks TTL.
+ * Verifies an HMAC-SHA256 signature token and checks its Time-To-Live (TTL).
+ * 
+ * @param objectKey The R2 key provided in the request
+ * @param userId The ID of the user making the upload
+ * @param mimeType The MIME type of the binary stream being uploaded
+ * @param expiresAt The Unix timestamp when the token expires
+ * @param signature The signature provided by the client
+ * @param secret The server's HMAC secret key
+ * @returns true if the signature is valid and has not expired, false otherwise.
  */
 export async function verifyUploadToken(
 	objectKey: string,
@@ -81,7 +100,12 @@ export async function verifyUploadToken(
 
 /**
  * Magic-byte inspection for binary file verification at the edge.
- * Returns true if the magic bytes of the Uint8Array buffer match the declared MIME type.
+ * Reads the first few bytes of a file buffer to guarantee its actual format,
+ * preventing users from uploading malicious executables renamed to `.png`.
+ * 
+ * @param buffer The incoming raw binary stream (Uint8Array)
+ * @param mimeType The expected MIME type claimed by the client
+ * @returns true if the file's internal magic bytes match the claimed MIME type.
  */
 export function checkMagicBytes(buffer: Uint8Array, mimeType: string): boolean {
 	if (!buffer || buffer.length < 4) return false;

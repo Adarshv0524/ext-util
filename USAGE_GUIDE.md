@@ -11,7 +11,7 @@ You can embed the `ext-util` UI directly into your main website. This handles th
 ```html
 <!-- Inside your main application (e.g. Next.js, React, or SvelteKit) -->
 <iframe 
-  src="https://ext-util.example.com/upload-card" 
+  src="https://util.avadhya.in/upload-card" 
   width="450" 
   height="400" 
   frameborder="0"
@@ -27,7 +27,7 @@ When the user drops an image into the iframe and it successfully uploads, the if
 // In your main application
 window.addEventListener('message', (event) => {
   // Always verify the origin in production!
-  // if (event.origin !== "https://ext-util.example.com") return;
+  // if (event.origin !== "https://util.avadhya.in") return;
 
   const data = event.data;
   
@@ -61,7 +61,7 @@ async function handleImageDrop(file) {
     file: file,
     userId: 123, // Your user's ID
     assetType: 'article_inline',
-    apiBaseUrl: 'https://ext-util.example.com' // Point to your ext-util deployment
+    apiBaseUrl: 'https://util.avadhya.in' // Point to your ext-util deployment
   });
 
   if (result.error) {
@@ -77,7 +77,7 @@ async function handleImageDrop(file) {
 
   // Phase 3: Commit the asset to prevent orphan cleanup
   // You can do this immediately, or later when the article is saved.
-  await commitExtUtilAsset(object_key, 'articles', articleId, 123, 'https://ext-util.example.com');
+  await commitExtUtilAsset(object_key, 'articles', articleId, 123, 'https://util.avadhya.in');
 }
 ```
 

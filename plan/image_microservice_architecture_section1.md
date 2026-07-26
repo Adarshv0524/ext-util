@@ -2,7 +2,7 @@
 ## Section 1: System & Data Flow Map — Decoupled Image Microservice
 
 **Document Status:** Implementation-Ready Draft  
-**Scope:** Cloudflare Worker + R2 image upload integration as a sidecar to the existing SvelteKit → FastAPI → MySQL stack  
+**Scope:** Cloudflare Worker + R2 image upload integration as a sidecar to the existing SvelteKit → SvelteKit → Cloudflare D1 stack  
 **Prepared For:** Infrastructure Lead review; covers topology, three upload flows, URL lifecycle, and architectural rationale
 
 ---
@@ -11,16 +11,16 @@
 
 ### A.1 Positioning the Image Microservice
 
-The image upload microservice is a **fully decoupled sidecar** that sits alongside the existing application stack. It is not a new internal FastAPI module — it is an external Cloudflare Worker deployed to Cloudflare's global edge network. Its responsibilities are narrow and strictly bounded:
+The image upload microservice is a **fully decoupled sidecar** that sits alongside the existing application stack. It is not a new internal SvelteKit module — it is an external Cloudflare Worker deployed to Cloudflare's global edge network. Its responsibilities are narrow and strictly bounded:
 
 | Responsibility | Owner |
 |:---|:---|
-| Issue time-limited, scoped upload tokens (presigned POST policies) | FastAPI `/api/v1/images/upload-token` |
+| Issue time-limited, scoped upload tokens (presigned POST policies) | SvelteKit `/api/v1/images/upload-token` |
 | Accept the binary image payload and persist it to R2 | Cloudflare Worker + R2 Bucket |
-| Store the returned public R2 URL as a plain `VARCHAR` string | FastAPI → MySQL |
+| Store the returned public R2 URL as a plain `VARCHAR` string | SvelteKit → Cloudflare D1 |
 | Serve the image to end users on subsequent requests | Cloudflare CDN (R2 public bucket URL) |
 
-The FastAPI backend **never receives, buffers, or proxies the binary image bytes.** Its only role in the upload path is JWT-authenticated token issuance. The SvelteKit frontend directly `POST`s the binary file to R2 using the presigned URL.
+The SvelteKit backend **never receives, buffers, or proxies the binary image bytes.** Its only role in the upload path is JWT-authenticated token issuance. The SvelteKit frontend directly `POST`s the binary file to R2 using the presigned URL.
 
 ---
 
@@ -49,7 +49,7 @@ graph TB
     end
 
     %% ─── Primary Backend ─────────────────────────────────────────────────
-    subgraph Backend ["Backend Layer (FastAPI / Python 3.11 — Port 8000)"]
+    subgraph Backend ["Backend Layer (SvelteKit / Python 3.11 — Port 8000)"]
         Gateway["Uvicorn ASGI Server"]
 
         subgraph Middleware ["Middleware Stack"]
@@ -61,7 +61,7 @@ graph TB
         subgraph Routers ["API Routers (/api/v1/)"]
             R_Auth["/auth — JWT & OAuth2"]
             R_ImageToken["/images/upload-token\n🆕 Token issuance only\nReturns: presigned POST URL + fields"]
-            R_Images["/images/confirm\n🆕 Persists returned URL to MySQL"]
+            R_Images["/images/confirm\n🆕 Persists returned URL to Cloudflare D1"]
             R_Users["/users — Profile & Avatar URL PATCH"]
             R_Authors["/authors — cover_image_url PATCH"]
             R_Works["/works — cover_image_url PATCH"]
@@ -83,17 +83,17 @@ graph TB
     subgraph ImageEdge ["🆕 Image Microservice (Cloudflare Edge)"]
         Worker["Cloudflare Worker\n(Edge runtime — validates CORS origin,\nenforces max file size & MIME allowlist)"]
         R2[("Cloudflare R2 Bucket\nawadhi-media\n(S3-compatible object storage)")]
-        CDN["Cloudflare CDN\n(Public URL: https://media.awadhi.in/*)"]
+        CDN["Cloudflare CDN\n(Public URL: https://util.avadhya.in/*)"]
 
         Worker --> R2
         R2 --> CDN
     end
 
     %% ─── Database Layer ──────────────────────────────────────────────────
-    subgraph Database ["Database Layer (MySQL 8.0 — 29 Tables)"]
+    subgraph Database ["Database Layer (Cloudflare D1 8.0 — 29 Tables)"]
         ORM["SQLAlchemy 2.0 ORM"]
         Alembic["Alembic Migrations"]
-        DB[("MySQL InnoDB\nawadhi_platform")]
+        DB[("Cloudflare D1 InnoDB\nawadhi_platform")]
 
         ORM --> DB
         Alembic -.-> DB
@@ -106,9 +106,9 @@ graph TB
     R_ImageToken --> Svc_R2
     Svc_R2 -- "boto3 presign_post\n(S3-compat API)" --> R2
 
-    ImageSvc -- "2. POST presignedUrl\n   multipart/form-data (binary)\n   ← NO FastAPI involved" --> Worker
+    ImageSvc -- "2. POST presignedUrl\n   multipart/form-data (binary)\n   ← NO SvelteKit involved" --> Worker
 
-    ImageSvc -- "3. PATCH /api/v1/users/me or\n   /api/v1/authors/{id} or\n   /api/v1/works/{id}\n   body: { image_url: 'https://media.awadhi.in/...' }" --> Backend
+    ImageSvc -- "3. PATCH /api/v1/users/me or\n   /api/v1/authors/{id} or\n   /api/v1/works/{id}\n   body: { image_url: 'https://util.avadhya.in/...' }" --> Backend
 
     Backend --> ORM
     CDN -- "4. Served directly to browser\n   on subsequent page loads" --> Client
@@ -137,10 +137,10 @@ sequenceDiagram
     actor User as ✍️ Contributor
     participant Tiptap as Tiptap Canvas<br/>(ImageUpload Extension)
     participant ImageSvc as imageUploadService.ts
-    participant FastAPI as FastAPI /api/v1/images/upload-token
+    participant SvelteKit as SvelteKit /api/v1/images/upload-token
     participant R2Worker as Cloudflare Worker + R2
-    participant CDN as Cloudflare CDN<br/>(https://media.awadhi.in)
-    participant SubAPI as FastAPI /api/v1/submissions/{id}
+    participant CDN as Cloudflare CDN<br/>(https://util.avadhya.in)
+    participant SubAPI as SvelteKit /api/v1/submissions/{id}
 
     User->>Tiptap: Pastes or drops image file
     Note over Tiptap: Intercepts event via custom<br/>ImageUpload extension.<br/>Extracts File object from DataTransfer.
@@ -148,15 +148,15 @@ sequenceDiagram
     Tiptap->>ImageSvc: uploadImage(file, context='article')
 
     rect rgb(232, 245, 232)
-        Note over ImageSvc,FastAPI: Step 1 — Token Request (JWT authenticated)
-        ImageSvc->>FastAPI: GET /api/v1/images/upload-token<br/>Headers: Authorization: Bearer {jwt}<br/>Params: ?context=article&mime=image/webp&size=204800
-        FastAPI->>FastAPI: Validate JWT → extract user_id & role<br/>Enforce max size (5 MB) & MIME allowlist<br/>(image/webp, image/jpeg, image/png, image/gif)
-        FastAPI->>FastAPI: R2TokenService.generate_presigned_post(<br/>  bucket="awadhi-media",<br/>  key="articles/{user_id}/{uuid}.webp",<br/>  conditions=[content-length-range, mime],<br/>  expires=300  # 5 minutes<br/>)
-        FastAPI-->>ImageSvc: 200 OK<br/>{ url: "https://awadhi-media.r2.cloudflarestorage.com",<br/>  fields: { key, policy, x-amz-signature, ... },<br/>  public_url: "https://media.awadhi.in/articles/{user_id}/{uuid}.webp" }
+        Note over ImageSvc,SvelteKit: Step 1 — Token Request (JWT authenticated)
+        ImageSvc->>SvelteKit: GET /api/v1/images/upload-token<br/>Headers: Authorization: Bearer {jwt}<br/>Params: ?context=article&mime=image/webp&size=204800
+        SvelteKit->>SvelteKit: Validate JWT → extract user_id & role<br/>Enforce max size (5 MB) & MIME allowlist<br/>(image/webp, image/jpeg, image/png, image/gif)
+        SvelteKit->>SvelteKit: R2TokenService.generate_presigned_post(<br/>  bucket="awadhi-media",<br/>  key="articles/{user_id}/{uuid}.webp",<br/>  conditions=[content-length-range, mime],<br/>  expires=300  # 5 minutes<br/>)
+        SvelteKit-->>ImageSvc: 200 OK<br/>{ url: "https://awadhi-media.r2.cloudflarestorage.com",<br/>  fields: { key, policy, x-amz-signature, ... },<br/>  public_url: "https://util.avadhya.in/articles/{user_id}/{uuid}.webp" }
     end
 
     rect rgb(232, 240, 255)
-        Note over ImageSvc,R2Worker: Step 2 — Direct Binary Upload (FastAPI bypassed entirely)
+        Note over ImageSvc,R2Worker: Step 2 — Direct Binary Upload (SvelteKit bypassed entirely)
         ImageSvc->>ImageSvc: Build FormData:<br/>  Append all fields from presigned response<br/>  Append file as last field ("file")
         ImageSvc->>R2Worker: POST {presigned_url}<br/>Content-Type: multipart/form-data<br/>Body: {policy_fields... + binary_blob}
         Note over R2Worker: Cloudflare Worker validates:<br/>• Origin header matches allowlist<br/>• MIME type matches policy<br/>• File size within declared range<br/>• Signature not expired (TTL=300s)
@@ -166,20 +166,20 @@ sequenceDiagram
 
     rect rgb(255, 248, 225)
         Note over ImageSvc,Tiptap: Step 3 — URL Injection into Tiptap JSON
-        ImageSvc-->>Tiptap: Returns public_url<br/>"https://media.awadhi.in/articles/{user_id}/{uuid}.webp"
+        ImageSvc-->>Tiptap: Returns public_url<br/>"https://util.avadhya.in/articles/{user_id}/{uuid}.webp"
         Tiptap->>Tiptap: editor.chain().focus()<br/>  .setImage({ src: public_url })<br/>  .run()
-        Note over Tiptap: Tiptap JSON doc now contains:<br/>{ type: "image", attrs: { src: "https://media.awadhi.in/..." } }<br/>No base64 blob. No inline data URI.
+        Note over Tiptap: Tiptap JSON doc now contains:<br/>{ type: "image", attrs: { src: "https://util.avadhya.in/..." } }<br/>No base64 blob. No inline data URI.
     end
 
     rect rgb(255, 235, 235)
         Note over Tiptap,SubAPI: Step 4 — Autosave (URL persisted indirectly via Tiptap JSON)
         Tiptap->>SubAPI: PATCH /api/v1/submissions/{draft_id}<br/>body: { content_json: { ...tiptap_doc_with_image_url... } }
-        Note over SubAPI: FastAPI saves the entire Tiptap JSON<br/>to submissions.content_json (TEXT/JSON column).<br/>The R2 URL is an embedded string inside that JSON —<br/>no separate image table entry needed.
+        Note over SubAPI: SvelteKit saves the entire Tiptap JSON<br/>to submissions.content_json (TEXT/JSON column).<br/>The R2 URL is an embedded string inside that JSON —<br/>no separate image table entry needed.
         SubAPI-->>Tiptap: 200 OK — Draft autosaved
     end
 
     User->>Tiptap: Sees image rendered inline within 1-2 seconds
-    Note over CDN: On next load, browser fetches<br/>img src directly from CDN —<br/>zero FastAPI involvement.
+    Note over CDN: On next load, browser fetches<br/>img src directly from CDN —<br/>zero SvelteKit involvement.
 ```
 
 ---
@@ -193,10 +193,10 @@ sequenceDiagram
     actor User as 👤 Registered User
     participant ProfilePage as SvelteKit /profile<br/>(AvatarUpload.svelte component)
     participant ImageSvc as imageUploadService.ts
-    participant TokenAPI as FastAPI /api/v1/images/upload-token
+    participant TokenAPI as SvelteKit /api/v1/images/upload-token
     participant R2Worker as Cloudflare Worker + R2
-    participant UserAPI as FastAPI /api/v1/users/me
-    participant DB as MySQL — users table
+    participant UserAPI as SvelteKit /api/v1/users/me
+    participant DB as Cloudflare D1 — users table
 
     User->>ProfilePage: Selects avatar image via file picker
     Note over ProfilePage: Validates client-side:<br/>• Max 2 MB<br/>• Accepts: image/jpeg, image/png, image/webp<br/>Shows local preview via URL.createObjectURL()
@@ -207,11 +207,11 @@ sequenceDiagram
         Note over ImageSvc,TokenAPI: Step 1 — Request Upload Token
         ImageSvc->>TokenAPI: GET /api/v1/images/upload-token<br/>Headers: Authorization: Bearer {jwt}<br/>Params: ?context=avatar&mime=image/webp&size=512000
         TokenAPI->>TokenAPI: Verify JWT (user must be authenticated)<br/>Generate presigned POST policy:<br/>  key: "avatars/{user_id}/avatar.webp"<br/>  Note: Fixed filename means new upload<br/>  automatically overwrites previous avatar<br/>  at the same R2 key — no orphan cleanup needed
-        TokenAPI-->>ImageSvc: 200 OK<br/>{ url, fields, public_url:<br/>  "https://media.awadhi.in/avatars/{user_id}/avatar.webp" }
+        TokenAPI-->>ImageSvc: 200 OK<br/>{ url, fields, public_url:<br/>  "https://util.avadhya.in/avatars/{user_id}/avatar.webp" }
     end
 
     rect rgb(232, 240, 255)
-        Note over ImageSvc,R2Worker: Step 2 — Direct Upload to R2 (FastAPI not in upload path)
+        Note over ImageSvc,R2Worker: Step 2 — Direct Upload to R2 (SvelteKit not in upload path)
         ImageSvc->>ImageSvc: Convert file to WebP client-side if browser supports<br/>Canvas API → toBlob('image/webp', 0.85)<br/>(Falls back to original format if Canvas API unavailable)
         ImageSvc->>R2Worker: POST {presigned_url}<br/>multipart/form-data: {fields} + file blob
         R2Worker->>R2Worker: Validates signature, MIME, size<br/>Writes object: avatars/{user_id}/avatar.webp
@@ -219,18 +219,18 @@ sequenceDiagram
     end
 
     rect rgb(255, 248, 225)
-        Note over ImageSvc,UserAPI: Step 3 — Persist URL to MySQL via FastAPI
+        Note over ImageSvc,UserAPI: Step 3 — Persist URL to Cloudflare D1 via SvelteKit
         ImageSvc-->>ProfilePage: Returns public_url
-        ProfilePage->>UserAPI: PATCH /api/v1/users/me<br/>Headers: Authorization: Bearer {jwt}<br/>Body: { avatar_url: "https://media.awadhi.in/avatars/{user_id}/avatar.webp" }
+        ProfilePage->>UserAPI: PATCH /api/v1/users/me<br/>Headers: Authorization: Bearer {jwt}<br/>Body: { avatar_url: "https://util.avadhya.in/avatars/{user_id}/avatar.webp" }
         UserAPI->>UserAPI: Validate JWT → confirm user_id matches<br/>Update ORM model: user.avatar_url = avatar_url
         UserAPI->>DB: UPDATE users SET avatar_url = ? WHERE id = ?
         DB-->>UserAPI: Row updated (1 row affected)
-        UserAPI-->>ProfilePage: 200 OK { avatar_url: "https://media.awadhi.in/..." }
+        UserAPI-->>ProfilePage: 200 OK { avatar_url: "https://util.avadhya.in/..." }
     end
 
     ProfilePage->>ProfilePage: Replaces <img src> with new public_url<br/>URL.revokeObjectURL(localPreview) — cleanup
     User->>ProfilePage: Sees new avatar immediately (no page reload)
-    Note over DB: users.avatar_url now holds a plain VARCHAR<br/>"https://media.awadhi.in/avatars/42/avatar.webp"<br/>Every page that renders this user reads that column directly.
+    Note over DB: users.avatar_url now holds a plain VARCHAR<br/>"https://util.avadhya.in/avatars/42/avatar.webp"<br/>Every page that renders this user reads that column directly.
 ```
 
 ---
@@ -239,17 +239,17 @@ sequenceDiagram
 
 **Trigger:** Admin navigates to `/admin/authors` or `/admin/works`, opens an entity's edit panel, and uploads a cover image.
 
-**Security context:** Requires `role = admin` or `role = senior_moderator`. RBAC enforced by FastAPI dependency injection (`require_admin` guard on the token endpoint and the PATCH endpoint).
+**Security context:** Requires `role = admin` or `role = senior_moderator`. RBAC enforced by SvelteKit dependency injection (`require_admin` guard on the token endpoint and the PATCH endpoint).
 
 ```mermaid
 sequenceDiagram
     actor Admin as 🛡️ Admin / Sr. Moderator
     participant AdminPage as SvelteKit /admin/authors<br/>or /admin/works
     participant ImageSvc as imageUploadService.ts
-    participant TokenAPI as FastAPI /api/v1/images/upload-token
+    participant TokenAPI as SvelteKit /api/v1/images/upload-token
     participant R2Worker as Cloudflare Worker + R2
-    participant AuthorAPI as FastAPI /api/v1/authors/{id}<br/>or /api/v1/works/{id}
-    participant DB as MySQL — authors / works tables
+    participant AuthorAPI as SvelteKit /api/v1/authors/{id}<br/>or /api/v1/works/{id}
+    participant DB as Cloudflare D1 — authors / works tables
 
     Admin->>AdminPage: Opens Author edit panel, selects cover image
     Note over AdminPage: Entity detail form shows current<br/>cover_image_url (or placeholder).<br/>File input: accepts image/*, max 10 MB
@@ -260,13 +260,13 @@ sequenceDiagram
         Note over ImageSvc,TokenAPI: Step 1 — Admin-Scoped Token Request
         ImageSvc->>TokenAPI: GET /api/v1/images/upload-token<br/>Headers: Authorization: Bearer {admin_jwt}<br/>Params: ?context=cover&entity_type=author&entity_id=42&mime=image/jpeg&size=2048000
         TokenAPI->>TokenAPI: Verify JWT + assert role ∈ {admin, senior_moderator}<br/>Returns 403 if insufficient role.<br/>Generate presigned POST policy:<br/>  key: "covers/authors/42/cover.jpg"<br/>  Conditions: max 10 MB, MIME image/*<br/>  TTL: 300 seconds
-        TokenAPI-->>ImageSvc: 200 OK<br/>{ url, fields, public_url:<br/>  "https://media.awadhi.in/covers/authors/42/cover.jpg" }
+        TokenAPI-->>ImageSvc: 200 OK<br/>{ url, fields, public_url:<br/>  "https://util.avadhya.in/covers/authors/42/cover.jpg" }
     end
 
     rect rgb(232, 240, 255)
         Note over ImageSvc,R2Worker: Step 2 — Binary Upload Direct to R2
         ImageSvc->>R2Worker: POST {presigned_url}<br/>multipart/form-data: {policy_fields} + cover_image_blob
-        Note over R2Worker: Enforces CORS to awadhi.in origin only.<br/>Content-Type validated against policy.<br/>Size validated against declared range (0 – 10 MB).
+        Note over R2Worker: Enforces CORS to avadhya.in origin only.<br/>Content-Type validated against policy.<br/>Size validated against declared range (0 – 10 MB).
         R2Worker->>R2Worker: Persists object: covers/authors/42/cover.jpg
         R2Worker-->>ImageSvc: 204 No Content
     end
@@ -274,7 +274,7 @@ sequenceDiagram
     rect rgb(255, 248, 225)
         Note over ImageSvc,AuthorAPI: Step 3 — Persist URL via Authenticated PATCH
         ImageSvc-->>AdminPage: Returns public_url
-        AdminPage->>AuthorAPI: PATCH /api/v1/authors/42<br/>Headers: Authorization: Bearer {admin_jwt}<br/>Body: { cover_image_url: "https://media.awadhi.in/covers/authors/42/cover.jpg" }
+        AdminPage->>AuthorAPI: PATCH /api/v1/authors/42<br/>Headers: Authorization: Bearer {admin_jwt}<br/>Body: { cover_image_url: "https://util.avadhya.in/covers/authors/42/cover.jpg" }
         Note over AuthorAPI: require_admin dependency re-validates JWT.<br/>Prevents URL injection by non-admins — only<br/>the confirmed owner of that role can set this field.
         AuthorAPI->>AuthorAPI: ORM: author.cover_image_url = cover_image_url
         AuthorAPI->>DB: UPDATE authors<br/>SET cover_image_url = ?,<br/>    updated_at = NOW()<br/>WHERE id = 42
@@ -295,18 +295,18 @@ sequenceDiagram
 ### C.1 The Complete Journey of One URL
 
 ```
-"https://media.awadhi.in/avatars/42/avatar.webp"
+"https://util.avadhya.in/avatars/42/avatar.webp"
 ```
 
 | Phase | What Happens | Where |
 |:---|:---|:---|
-| **1. Generation** | `R2TokenService.generate_presigned_post()` computes the deterministic public URL from the bucket name + object key. The URL is returned to the client in the token response *before* the file is even uploaded. | FastAPI — `R2TokenService` |
+| **1. Generation** | `R2TokenService.generate_presigned_post()` computes the deterministic public URL from the bucket name + object key. The URL is returned to the client in the token response *before* the file is even uploaded. | SvelteKit — `R2TokenService` |
 | **2. Object Creation** | Client uploads binary to R2 via presigned POST. R2 creates the object at the declared key. The public URL is now resolvable. | Cloudflare R2 Bucket |
-| **3. Persistence** | Client sends the URL as a plain string in a JSON body to FastAPI. FastAPI writes it to MySQL via SQLAlchemy ORM. No image metadata, no file size, no EXIF — just the URL string. | FastAPI → MySQL `VARCHAR(500)` |
-| **4. CDN Serving** | On all subsequent page loads, the client receives the URL from the API response and sets it as `<img src="...">`. The browser fetches the image directly from Cloudflare's CDN. FastAPI is not in this path at all. | Cloudflare CDN → Browser |
+| **3. Persistence** | Client sends the URL as a plain string in a JSON body to SvelteKit. SvelteKit writes it to Cloudflare D1 via SQLAlchemy ORM. No image metadata, no file size, no EXIF — just the URL string. | SvelteKit → Cloudflare D1 `VARCHAR(500)` |
+| **4. CDN Serving** | On all subsequent page loads, the client receives the URL from the API response and sets it as `<img src="...">`. The browser fetches the image directly from Cloudflare's CDN. SvelteKit is not in this path at all. | Cloudflare CDN → Browser |
 | **5. Cache** | Cloudflare's edge network caches the image globally. `Cache-Control: public, max-age=31536000, immutable` is set on R2 objects. Deterministic file paths (e.g. `avatar.webp`) are busted by uploading a new file to the same key. | Cloudflare Edge PoPs |
 
-### C.2 MySQL Storage — Column Reality
+### C.2 Cloudflare D1 Storage — Column Reality
 
 ```sql
 -- No new table is created. The URL drops into existing columns:
@@ -333,34 +333,34 @@ ALTER TABLE works
 > [!IMPORTANT]
 > **No foreign key. No image metadata table. No file-size column.** The R2 URL is treated identically to how a CMS like WordPress stores an `_wp_attachment_url` post meta: a plain string that the CDN resolves. This is intentional (see §D).
 
-### C.3 Page Load — Read Path (Zero Image Overhead on FastAPI)
+### C.3 Page Load — Read Path (Zero Image Overhead on SvelteKit)
 
 ```mermaid
 sequenceDiagram
     participant Browser
     participant SvelteKit as SvelteKit SSR/CSR
-    participant FastAPI as FastAPI /api/v1/authors/42
-    participant DB as MySQL
+    participant SvelteKit as SvelteKit /api/v1/authors/42
+    participant DB as Cloudflare D1
     participant CDN as Cloudflare CDN
 
     Browser->>SvelteKit: GET /authors/tulsidas
-    SvelteKit->>FastAPI: GET /api/v1/authors/42
-    FastAPI->>DB: SELECT id, name_devanagari, cover_image_url FROM authors WHERE id = 42
-    DB-->>FastAPI: { id: 42, cover_image_url: "https://media.awadhi.in/covers/authors/42/cover.jpg" }
-    FastAPI-->>SvelteKit: 200 OK { ...author, cover_image_url: "https://..." }
-    SvelteKit-->>Browser: Renders HTML with <img src="https://media.awadhi.in/...">
-    Browser->>CDN: GET https://media.awadhi.in/covers/authors/42/cover.jpg
+    SvelteKit->>SvelteKit: GET /api/v1/authors/42
+    SvelteKit->>DB: SELECT id, name_devanagari, cover_image_url FROM authors WHERE id = 42
+    DB-->>SvelteKit: { id: 42, cover_image_url: "https://util.avadhya.in/covers/authors/42/cover.jpg" }
+    SvelteKit-->>SvelteKit: 200 OK { ...author, cover_image_url: "https://..." }
+    SvelteKit-->>Browser: Renders HTML with <img src="https://util.avadhya.in/...">
+    Browser->>CDN: GET https://util.avadhya.in/covers/authors/42/cover.jpg
     CDN-->>Browser: Binary image (served from Cloudflare edge PoP, not origin)
-    Note over FastAPI: FastAPI never touches image bytes<br/>on read or write paths.
+    Note over SvelteKit: SvelteKit never touches image bytes<br/>on read or write paths.
 ```
 
 ---
 
 ## D. Key Architectural Decisions
 
-### D.1 Why Binary Payloads Bypass FastAPI
+### D.1 Why Binary Payloads Bypass SvelteKit
 
-**The core problem with naïve image upload via FastAPI:**
+**The core problem with naïve image upload via SvelteKit:**
 
 ```python
 # What we are NOT doing — Anti-pattern
@@ -376,21 +376,21 @@ async def upload_image(file: UploadFile = File(...)):
 This approach means:
 - Every 5 MB avatar upload allocates 5 MB of RAM inside the Uvicorn ASGI worker.
 - With 20 concurrent uploads, that's 100 MB of heap pressure on the Python process.
-- The binary is transmitted twice: client → FastAPI → R2. Double egress cost.
+- The binary is transmitted twice: client → SvelteKit → R2. Double egress cost.
 - Uvicorn's default worker count is CPU-bound; blocking on large I/O starves API calls.
 
 **The presigned-POST solution:**
 
 ```
-Client ──(JWT)──► FastAPI ──► [generates 300-byte JSON token] ──► Client
+Client ──(JWT)──► SvelteKit ──► [generates 300-byte JSON token] ──► Client
 Client ──(5MB binary)──────────────────────────────────────────► R2 directly
 ```
 
-FastAPI's involvement is `O(1)` per upload: one tiny JSON payload, no binary I/O, no memory pressure. The binary transfer is offloaded entirely to Cloudflare's infrastructure.
+SvelteKit's involvement is `O(1)` per upload: one tiny JSON payload, no binary I/O, no memory pressure. The binary transfer is offloaded entirely to Cloudflare's infrastructure.
 
 ---
 
-### D.2 FastAPI's Role: Token Issuance Only
+### D.2 SvelteKit's Role: Token Issuance Only
 
 The `R2TokenService` has exactly one job in the upload path:
 
@@ -421,7 +421,7 @@ class R2TokenService:
         """
         Returns a presigned POST URL + policy fields.
         The client uses these to upload directly to R2.
-        FastAPI never sees the binary payload.
+        SvelteKit never sees the binary payload.
         """
         return self._client.generate_presigned_post(
             Bucket=settings.R2_BUCKET_NAME,
@@ -451,7 +451,7 @@ async def get_upload_token(
     # 2. Validate max size per context
     # 3. Build deterministic key (e.g. avatars/{user_id}/avatar.webp)
     # 4. Call R2TokenService → return presigned data
-    # FastAPI's work ends here. ~5ms total.
+    # SvelteKit's work ends here. ~5ms total.
     ...
 ```
 
@@ -463,7 +463,7 @@ async def get_upload_token(
 |:---|:---|:---|
 | Store URL as `VARCHAR(500)` in existing table column | Separate `images` metadata table with FK | FK table would require JOIN on every author/user query. Images don't need relational integrity — if an R2 object is deleted, the URL becomes a 404, which is acceptable and observable. |
 | Deterministic, fixed-path keys (`avatars/{user_id}/avatar.webp`) | UUID per upload, stored in DB | Fixed paths make overwrites implicit — uploading a new avatar automatically replaces the old one at the same CDN URL. No orphan-cleanup cron needed. No URL update query needed (URL is stable). |
-| No EXIF/metadata stored in MySQL | Store width, height, format, file size in DB | The platform's use-cases don't need image metadata for rendering decisions. The CDN serves the image; the browser's `<img>` tag handles layout. Storing metadata adds schema surface area for zero functional benefit at current scale. |
+| No EXIF/metadata stored in Cloudflare D1 | Store width, height, format, file size in DB | The platform's use-cases don't need image metadata for rendering decisions. The CDN serves the image; the browser's `<img>` tag handles layout. Storing metadata adds schema surface area for zero functional benefit at current scale. |
 | Tiptap images embedded as URL strings in `content_json` | Separate junction table `submission_images(submission_id, image_url)` | Junction table would require separate migration and query. The Tiptap JSON document is already the ground truth for article content. The URL is just another attribute of an image node within that document. |
 
 ---
@@ -472,12 +472,12 @@ async def get_upload_token(
 
 ```mermaid
 graph LR
-    A["Browser"] -- "1. JWT required for token" --> B["FastAPI Token Endpoint"]
+    A["Browser"] -- "1. JWT required for token" --> B["SvelteKit Token Endpoint"]
     B -- "2. Presigned POST (HMAC-signed, 5-min TTL)" --> A
     A -- "3. POST binary to R2\n(no JWT needed — policy is the auth)" --> C["R2 via Cloudflare Worker"]
     C -- "4. Validates HMAC signature\nMIME type\nFile size\nOrigin header" --> D["R2 Bucket"]
-    A -- "5. JWT required for URL persistence" --> E["FastAPI PATCH Endpoint"]
-    E -- "6. Writes URL to MySQL" --> F[("MySQL")]
+    A -- "5. JWT required for URL persistence" --> E["SvelteKit PATCH Endpoint"]
+    E -- "6. Writes URL to Cloudflare D1" --> F[("Cloudflare D1")]
 
     style B fill:#d4edda
     style E fill:#d4edda
@@ -491,7 +491,7 @@ graph LR
 | Unauthenticated upload token request | Token endpoint requires valid JWT (`get_current_user` dependency) |
 | Token replay attack | Presigned POST policy has 5-minute TTL; HMAC signature is single-use-scoped |
 | Uploading to arbitrary R2 keys | Key is constructed server-side from `user_id` + `context`; client cannot influence the path |
-| Injecting arbitrary URLs into user/author records | PATCH endpoints require JWT; the `image_url` field is validated to match the platform's R2 public URL prefix (`https://media.awadhi.in/`) |
+| Injecting arbitrary URLs into user/author records | PATCH endpoints require JWT; the `image_url` field is validated to match the platform's R2 public URL prefix (`https://util.avadhya.in/`) |
 | Storing malicious file content | Cloudflare Worker enforces MIME allowlist; R2 does not execute stored content |
 | Cross-origin token abuse | Cloudflare Worker checks `Origin` header against the platform's domain allowlist |
 
@@ -505,7 +505,7 @@ R2_ENDPOINT_URL=https://{CF_ACCOUNT_ID}.r2.cloudflarestorage.com
 R2_ACCESS_KEY_ID=<r2_api_token_key_id>
 R2_SECRET_ACCESS_KEY=<r2_api_token_secret>
 R2_BUCKET_NAME=awadhi-media
-R2_PUBLIC_URL_BASE=https://media.awadhi.in
+R2_PUBLIC_URL_BASE=https://util.avadhya.in
 
 # frontend/.env additions
 PUBLIC_IMAGE_UPLOAD_CONTEXT_ARTICLE=article

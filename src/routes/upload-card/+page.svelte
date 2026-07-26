@@ -61,84 +61,69 @@
 	};
 </script>
 
-<div class="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
-	<div class="w-full max-w-md bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-		<!-- Header -->
-		<div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
-			<h2 class="text-lg font-semibold text-gray-800">Upload Image</h2>
-			<p class="text-sm text-gray-500">Select or drag & drop an image</p>
-		</div>
-
-		<!-- Body -->
-		<div class="p-6">
-			<!-- Dropzone -->
-			<div
-				class="relative flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg transition-colors
-				{isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300 bg-gray-50 hover:bg-gray-100'}"
-				on:dragover|preventDefault={() => (isDragging = true)}
-				on:dragleave|preventDefault={() => (isDragging = false)}
-				on:drop={handleDrop}
-				role="button"
-				tabindex="0"
-				on:click={() => fileInput.click()}
-				on:keydown={(e) => e.key === 'Enter' && fileInput.click()}
-			>
-				{#if isUploading}
-					<div class="flex flex-col items-center space-y-3">
-						<svg class="animate-spin h-8 w-8 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-							<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-							<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-						</svg>
-						<span class="text-sm font-medium text-gray-600">Uploading...</span>
-					</div>
-				{:else if uploadSuccessUrl}
-					<div class="flex flex-col items-center space-y-2">
-						<div class="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
-							<svg class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-							</svg>
-						</div>
-						<span class="text-sm font-medium text-green-600">Upload Complete!</span>
-					</div>
-				{:else}
-					<svg class="w-10 h-10 mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-					</svg>
-					<p class="mb-2 text-sm text-gray-500"><span class="font-semibold text-blue-600">Click to upload</span> or drag and drop</p>
-					<p class="text-xs text-gray-400">PNG, JPG, WEBP, AVIF or GIF (MAX. 15MB)</p>
-				{/if}
-
-				<input 
-					bind:this={fileInput}
-					on:change={handleFileSelect}
-					type="file" 
-					class="hidden" 
-					accept="image/png, image/jpeg, image/webp, image/gif, image/avif" 
-				/>
+<div class="w-full h-full bg-transparent flex flex-col">
+	<div
+		class="relative flex flex-col items-center justify-center w-full h-full min-h-[200px] border-2 border-dashed rounded-xl transition-all duration-200
+		{isDragging ? 'border-blue-500 bg-blue-50/50' : 'border-gray-200 bg-gray-50/30 hover:bg-gray-50/80 hover:border-gray-300'}"
+		on:dragover|preventDefault={() => (isDragging = true)}
+		on:dragleave|preventDefault={() => (isDragging = false)}
+		on:drop={handleDrop}
+		role="button"
+		tabindex="0"
+		on:click={() => fileInput.click()}
+		on:keydown={(e) => e.key === 'Enter' && fileInput.click()}
+	>
+		{#if isUploading}
+			<div class="flex flex-col items-center space-y-3">
+				<svg class="animate-spin h-6 w-6 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+					<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+					<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+				</svg>
+				<span class="text-xs font-medium text-gray-500 tracking-wide uppercase">Uploading</span>
 			</div>
-
-			<!-- Error Feedback -->
-			{#if uploadError}
-				<div class="mt-4 p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100">
-					{uploadError}
+		{:else if uploadSuccessUrl}
+			<div class="flex flex-col items-center space-y-2 animate-in fade-in zoom-in duration-300">
+				<div class="h-10 w-10 rounded-full bg-green-50 flex items-center justify-center mb-1">
+					<svg class="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+					</svg>
 				</div>
-			{/if}
+				<span class="text-sm font-medium text-gray-700">Upload Complete</span>
+			</div>
+		{:else}
+			<svg class="w-8 h-8 mb-3 text-gray-400 transition-transform group-hover:scale-110 duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+			</svg>
+			<p class="mb-1 text-sm text-gray-600"><span class="font-medium text-blue-600">Click to upload</span> or drag and drop</p>
+			<p class="text-[11px] text-gray-400 font-medium">PNG, JPG, WEBP, AVIF (Max 15MB)</p>
+		{/if}
 
-			<!-- Success Feedback (Copy Link) -->
-			{#if uploadSuccessUrl}
-				<div class="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-					<p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Image URL</p>
-					<div class="flex items-center gap-2">
-						<input type="text" readonly value={uploadSuccessUrl} class="flex-1 text-sm p-2 bg-white border border-gray-300 rounded text-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-500" />
-						<button 
-							on:click={() => uploadSuccessUrl && navigator.clipboard.writeText(uploadSuccessUrl)}
-							class="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded transition-colors"
-						>
-							Copy
-						</button>
-					</div>
-				</div>
-			{/if}
-		</div>
+		<input 
+			bind:this={fileInput}
+			on:change={handleFileSelect}
+			type="file" 
+			class="hidden" 
+			accept="image/png, image/jpeg, image/webp, image/gif, image/avif" 
+		/>
 	</div>
+
+	<!-- Error Feedback -->
+	{#if uploadError}
+		<div class="mt-3 p-3 bg-red-50/50 text-red-600 text-xs rounded-lg border border-red-100/50 text-center animate-in fade-in slide-in-from-top-2">
+			{uploadError}
+		</div>
+	{/if}
+
+	<!-- Success Feedback (Copy Link) -->
+	{#if uploadSuccessUrl}
+		<div class="mt-3 flex items-center gap-2 p-1.5 bg-gray-50 rounded-lg border border-gray-100 animate-in fade-in slide-in-from-top-2">
+			<input type="text" readonly value={uploadSuccessUrl} class="flex-1 text-xs p-2 bg-transparent text-gray-500 focus:outline-none" />
+			<button 
+				on:click={() => uploadSuccessUrl && navigator.clipboard.writeText(uploadSuccessUrl)}
+				class="px-4 py-2 bg-white border border-gray-200 hover:bg-gray-50 hover:border-gray-300 text-gray-700 text-xs font-medium rounded-md transition-all shadow-sm"
+			>
+				Copy
+			</button>
+		</div>
+	{/if}
 </div>

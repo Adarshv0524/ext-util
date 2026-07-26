@@ -1,25 +1,25 @@
 # Section 4: Security & Optimization
 ### Awadhi Literature Platform — Decoupled Image Upload Microservice
 
-> **Stack anchor:** SvelteKit frontend · FastAPI/MySQL backend · Cloudflare R2 storage · Cloudflare Workers edge layer  
+> **Stack anchor:** SvelteKit frontend · SvelteKit/Cloudflare D1 backend · Cloudflare R2 storage · Cloudflare Workers edge layer  
 > **Auth anchor:** Existing `Role` hierarchy (`guest → contributor → moderator → admin`) and `role_at_least()` from `app/core/permissions.py`. Rate-limit infrastructure: `rate_limit_counters` table + `app/services/rate_limit.py` `check_and_increment()`.
 
 ---
 
 ## A. Presigned URL Security Model
 
-### A.1 — Why Presigned PUT URLs Are Safer Than Proxying Through FastAPI
+### A.1 — Why Presigned PUT URLs Are Safer Than Proxying Through SvelteKit
 
-Proxying uploads through FastAPI means every byte of every image passes through the application server's memory before reaching R2. This creates four compounding risks:
+Proxying uploads through SvelteKit means every byte of every image passes through the application server's memory before reaching R2. This creates four compounding risks:
 
-| Risk | Proxy Through FastAPI | Presigned PUT Direct to R2 |
+| Risk | Proxy Through SvelteKit | Presigned PUT Direct to R2 |
 |---|---|---|
 | **Memory exhaustion** | Server must buffer the entire file (a 10 MB avatar = 10 MB heap) | Server only touches the token JSON — zero file bytes |
-| **Request timeout window** | Slow uploaders hold a Uvicorn worker thread open for the full upload duration | Upload thread is owned by R2's CDN edge — FastAPI's worker is freed at token issuance |
-| **Amplified attack surface** | A malicious multipart body can probe FastAPI's parser, trigger OOM, or bypass size limits via chunked encoding tricks | R2's S3-compatible endpoint enforces Content-Length independently at its own edge |
+| **Request timeout window** | Slow uploaders hold a Uvicorn worker thread open for the full upload duration | Upload thread is owned by R2's CDN edge — SvelteKit's worker is freed at token issuance |
+| **Amplified attack surface** | A malicious multipart body can probe SvelteKit's parser, trigger OOM, or bypass size limits via chunked encoding tricks | R2's S3-compatible endpoint enforces Content-Length independently at its own edge |
 | **Logging of file bytes** | Body may partially appear in error logs, Sentry payloads, or middleware inspection (GDPR risk) | Only the object key and metadata are ever visible to the application tier |
 
-The presigned PUT model also provides a natural audit boundary: FastAPI authorizes *who may upload* and *what type*, but the actual byte stream flows directly from the browser to Cloudflare's network — two concerns that should never have been on the same server.
+The presigned PUT model also provides a natural audit boundary: SvelteKit authorizes *who may upload* and *what type*, but the actual byte stream flows directly from the browser to Cloudflare's network — two concerns that should never have been on the same server.
 
 ---
 
@@ -48,7 +48,7 @@ The S3 presigned URL spec does not natively enforce single-use. An attacker who 
 **Flow:**
 
 ```
-1. FastAPI issues presigned URL -> writes KV entry:
+1. SvelteKit issues presigned URL -> writes KV entry:
    Key:   "otpu:{object_key}"          (otpu = one-time-presigned-url)
    Value: "pending"
    TTL:   300 seconds
@@ -112,7 +112,7 @@ Example:
 avatars/usr_42/01HZRTK.webp:42:image/webp:1753521600
 ```
 
-**Signing (FastAPI):**
+**Signing (SvelteKit):**
 
 ```python
 # app/services/media_token.py
@@ -175,7 +175,7 @@ R2_PUBLIC_BASE_URL: str = ""  # e.g. https://images.awadhi.com
 No single validation layer is sufficient. The defense-in-depth model treats each layer as independently bypassable and requires the next layer to catch what the previous missed.
 
 ```
-Browser --[L1]--> FastAPI --[L2]--> Cloudflare Worker --[L3]--> R2 --[L4 post-upload]-->
+Browser --[L1]--> SvelteKit --[L2]--> Cloudflare Worker --[L3]--> R2 --[L4 post-upload]-->
 ```
 
 ---
@@ -214,7 +214,7 @@ export function validateFile(file: File, assetType: string): string | null {
 
 ---
 
-### Layer 2 — FastAPI (Authorization & Policy Gate)
+### Layer 2 — SvelteKit (Authorization & Policy Gate)
 
 **Purpose:** Authoritative policy enforcement. Rejects requests before a presigned URL is ever generated. This is the first security-enforcing layer.
 
@@ -413,15 +413,15 @@ async def verify_uploaded_object(object_key: str, db: Session) -> None:
 
 | Attack Vector | Layer Blocked At | Mitigation Detail |
 |---|---|---|
-| Client sends wrong MIME in `file.type` field | **L2 — FastAPI** | MIME whitelist on `UploadRequestSchema`; L1 already flags it for UX |
+| Client sends wrong MIME in `file.type` field | **L2 — SvelteKit** | MIME whitelist on `UploadRequestSchema`; L1 already flags it for UX |
 | Client sends oversized file | **L2 + L3** | L2 checks declared `file_size`; L3 Worker checks actual `Content-Length` |
 | Attacker repurposes presigned URL for different MIME type | **L3 — Worker** | Magic-byte check; `Content-Type` must match actual bytes |
 | Attacker replays presigned URL (second upload to same key) | **L3 — Worker** | KV one-time-use flag set to `"used"` after first PUT -> 409 on replay |
-| Attacker forges upload token for different user's object key | **L2 — FastAPI** | HMAC-SHA256 binding ties `object_key:user_id:mime_type:expires_at`; forgery requires `MEDIA_HMAC_SECRET` |
+| Attacker forges upload token for different user's object key | **L2 — SvelteKit** | HMAC-SHA256 binding ties `object_key:user_id:mime_type:expires_at`; forgery requires `MEDIA_HMAC_SECRET` |
 | MIME polyglot (JPEG containing PHP bytecode) | **L4 — Post-upload** | Full file hash + optional deep content scanning |
-| Guest / unauthenticated upload attempt | **L2 — FastAPI** | `role_at_least(Role.CONTRIBUTOR)` check before any token issuance |
-| Upload rate abuse (bulk object pollution) | **L2 + CF WAF** | FastAPI `check_and_increment` per user; Cloudflare per-IP rate limit at edge |
-| Object key path traversal (`../etc/passwd`) | **L2 — FastAPI** | Object key is generated server-side (UUID-based) — client never supplies the key |
+| Guest / unauthenticated upload attempt | **L2 — SvelteKit** | `role_at_least(Role.CONTRIBUTOR)` check before any token issuance |
+| Upload rate abuse (bulk object pollution) | **L2 + CF WAF** | SvelteKit `check_and_increment` per user; Cloudflare per-IP rate limit at edge |
+| Object key path traversal (`../etc/passwd`) | **L2 — SvelteKit** | Object key is generated server-side (UUID-based) — client never supplies the key |
 | R2 bucket public read of uncommitted files | **R2 policy** | Staging objects under `staging/` prefix — CDN rule blocks public reads until `is_committed=true` |
 | SSRF via presigned URL | **N/A** | Server only generates presigned URLs, never fetches them — vector does not exist in this flow |
 
@@ -429,9 +429,9 @@ async def verify_uploaded_object(object_key: str, db: Session) -> None:
 
 ## C. Rate Limiting Strategy
 
-### C.1 — FastAPI Per-User Limits
+### C.1 — SvelteKit Per-User Limits
 
-The existing `check_and_increment()` in `app/services/rate_limit.py` handles the MySQL sliding-window logic. The media router reuses it with a dedicated `action_key`.
+The existing `check_and_increment()` in `app/services/rate_limit.py` handles the Cloudflare D1 sliding-window logic. The media router reuses it with a dedicated `action_key`.
 
 ```python
 # app/core/constants.py -- additions
@@ -486,7 +486,7 @@ Rate:        60 requests per 10 minutes per IP
 Fingerprint: ip.src
 ```
 
-**Why two separate layers?** The per-IP Cloudflare rule defends against credential-stuffing where many accounts share one attacking IP. The per-user FastAPI limit defends against a single compromised account being abused via proxy rotation. Neither alone is sufficient.
+**Why two separate layers?** The per-IP Cloudflare rule defends against credential-stuffing where many accounts share one attacking IP. The per-user SvelteKit limit defends against a single compromised account being abused via proxy rotation. Neither alone is sufficient.
 
 ---
 
@@ -511,7 +511,7 @@ expires_at = datetime.now(timezone.utc) + timedelta(
 # Total window: 7 minutes (5 min URL TTL + 2 min grace for slow networks/retries)
 ```
 
-### D.2 — APScheduler Cron in FastAPI
+### D.2 — APScheduler Cron in SvelteKit
 
 ```python
 # app/core/scheduler.py
@@ -541,12 +541,12 @@ from contextlib import asynccontextmanager
 from app.core.scheduler import start_scheduler, scheduler
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: SvelteKit):
     start_scheduler()
     yield
     scheduler.shutdown()
 
-app = FastAPI(lifespan=lifespan)
+app = SvelteKit(lifespan=lifespan)
 ```
 
 ### D.3 — Cron SQL + R2 Deletion Logic
@@ -884,7 +884,7 @@ FASTAPI /api/v1/media/confirm  (client calls after PUT succeeds)
 |      -> cdn_url saved to entity table
 |
 v
-MySQL media_uploads.cdn_url --> article / profile reads through CDN
+Cloudflare D1 media_uploads.cdn_url --> article / profile reads through CDN
 |
 APScheduler (every hour, :00):
     -> Pass 1: DELETE uncommitted records past expires_at + R2 batch delete
