@@ -76,18 +76,16 @@
 		if (thumbnailPreviewUrl) URL.revokeObjectURL(thumbnailPreviewUrl);
 		thumbnailPreviewUrl = URL.createObjectURL(file);
 
-		// DEMO MODE MOCK
+		// DEMO MODE
+		let uploadProjectId = projectId;
 		if (isDemo) {
-			await new Promise(r => setTimeout(r, 1500)); // simulate delay
-			isUploading = false;
-			uploadSuccessUrl = 'https://imgapi.avadhya.in/demo/demo_image.png';
-			return;
+			uploadProjectId = 'demo';
 		}
 
 		const result = await uploadToExtUtil({
 			file,
 			assetType: 'article_inline',
-			projectId: projectId
+			projectId: uploadProjectId
 		});
 
 		isUploading = false;

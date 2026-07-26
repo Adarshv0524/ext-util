@@ -21,7 +21,10 @@ export const POST: RequestHandler = async ({ request, platform, locals }) => {
 		
 		// If project_id is provided, we MUST validate it and derive the userId from it
 		let projectRecord = null;
-		if (project_id && typeof project_id === 'string' && platform?.env?.MEDIA_DB) {
+		
+		if (project_id === 'demo') {
+			userId = 'demo_user';
+		} else if (project_id && typeof project_id === 'string' && platform?.env?.MEDIA_DB) {
 			const db = platform.env.MEDIA_DB;
 			projectRecord = await db.prepare("SELECT user_id, hmac_secret FROM projects WHERE id = ?").bind(project_id).first();
 			if (!projectRecord) {
