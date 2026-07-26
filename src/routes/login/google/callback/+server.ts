@@ -1,4 +1,4 @@
-import { redirect } from '@sveltejs/kit';
+import { redirect, isRedirect } from '@sveltejs/kit';
 import { getGoogleOAuth, generateId } from '$lib/server/auth';
 import { sendAdminNotification } from '$lib/server/email';
 import { env } from '$env/dynamic/private';
@@ -21,7 +21,7 @@ export const GET: RequestHandler = async (event) => {
 		
 		const response = await fetch('https://openidconnect.googleapis.com/v1/userinfo', {
 			headers: {
-				Authorization: `Bearer ${tokens.accessToken}`
+				Authorization: `Bearer ${tokens.accessToken()}`
 			}
 		});
 		
@@ -89,10 +89,13 @@ export const GET: RequestHandler = async (event) => {
 
 		throw redirect(302, '/dashboard');
 	} catch (e) {
-		if (e instanceof Response) {
-			throw e; // SvelteKit redirects throw Responses, we must rethrow
+		if (isRedirect(e)) {
+			throw e; // SvelteKit redirects must always be rethrown
 		}
 		console.error("OAuth error:", e);
-		return new Response('Internal Server Error', { status: 500 });
+		return new Response(
+			`OAuth Error: ${e instanceof Error ? e.message : 'Unknown error'}`,
+			{ status: 500 }
+		);
 	}
 };
