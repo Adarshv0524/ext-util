@@ -1,0 +1,25 @@
+node_modules/
+
+# SvelteKit
+.svelte-kit/
+build/
+dist/
+
+# Cloudflare / Wrangler
+.wrangler/
+.mf/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# OS / Editor files
+.DS_Store
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

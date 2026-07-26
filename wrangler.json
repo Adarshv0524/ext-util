@@ -1,0 +1,37 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ext-util",
+  "main": ".cloudflare/worker.js",
+  "compatibility_date": "2024-09-23",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "r2_buckets": [
+    {
+      "binding": "R2_BUCKET",
+      "bucket_name": "ext-util-media"
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "TOKEN_KV",
+      "id": "token_kv_id"
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "MEDIA_DB",
+      "database_name": "media_assets_db",
+      "database_id": "media_db_id"
+    }
+  ],
+  "vars": {
+    "HMAC_SECRET": "ext-util-secret-key-change-in-prod",
+    "CDN_BASE_URL": "http://localhost:5173"
+  },
+  "triggers": {
+    "crons": [
+      "0 * * * *"
+    ]
+  }
+}
