@@ -126,9 +126,31 @@ export const PUT: RequestHandler = async ({ params, url, request, platform }) =>
 	}
 };
 
-export const GET: RequestHandler = async ({ params, platform }) => {
+export const GET: RequestHandler = async ({ params, platform, url }) => {
 	const objectKey = params.key;
 	if (!objectKey) return new Response('Not Found', { status: 404 });
+
+	const w = url.searchParams.get('w');
+	const h = url.searchParams.get('h');
+	const q = url.searchParams.get('q');
+	const blur = url.searchParams.get('blur');
+
+	if (w || h || q || blur) {
+		const transformParams = [];
+		if (w) transformParams.push(`w=${w}`);
+		if (h) transformParams.push(`h=${h}`);
+		if (q) transformParams.push(`q=${q}`);
+		if (blur) transformParams.push(`blur=${blur}`);
+		transformParams.push('f=auto');
+		
+		const transformString = transformParams.join(',');
+		return new Response(null, {
+			status: 302,
+			headers: {
+				'Location': `/cdn-cgi/image/${transformString}/upload/${objectKey}`
+			}
+		});
+	}
 
 	const env = getEnv(platform?.env);
 	if (env.R2_BUCKET) {
