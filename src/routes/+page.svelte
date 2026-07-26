@@ -92,7 +92,7 @@
 					</div>
 					<h3 class="text-xl font-bold text-zinc-900">Secure Validation</h3>
 					<p class="text-zinc-700 leading-relaxed text-sm">
-						Your main app never touches the binary. Ext-util handles magic-byte verification, MIME type checking, and HMAC token validation natively.
+						Your main app never touches the binary. Imgapi handles magic-byte verification, MIME type checking, and HMAC token validation natively.
 					</p>
 				</div>
 

@@ -6,7 +6,7 @@
 </p>
 
 <h2>The Folder Structure</h2>
-<p>Ext-util automatically structures your uploads like a file system. It uses three levels of organization:</p>
+<p>Imgapi automatically structures your uploads like a file system. It uses three levels of organization:</p>
 
 <div class="p-4 bg-[#0f172a] border border-slate-700 rounded-lg mt-4 mb-6 font-mono text-sm text-slate-300">
   <div class="flex items-center gap-2 mb-2"><span class="text-teal-400">📁 uploads/</span> <span class="text-slate-500">(Root directory)</span></div>

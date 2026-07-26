@@ -11,7 +11,7 @@
     "check:watch": "svelte-check --tsconfig ./tsconfig.json --watch",
     "test": "vitest run",
     "test:watch": "vitest",
-    "deploy": "wrangler pages deploy .svelte-kit/cloudflare --project-name ext-util"
+    "deploy": "wrangler pages deploy .svelte-kit/cloudflare --project-name imgapi"
   },
   "devDependencies": {
     "@sveltejs/adapter-cloudflare": "^4.0.0",

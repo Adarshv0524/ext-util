@@ -153,12 +153,12 @@ APP_URL="http://localhost:5173"
 For production, Cloudflare does not upload your `.dev.vars` file for security. You must inject these secrets directly into Cloudflare via the terminal:
 
 ```bash
-wrangler pages secret put GOOGLE_CLIENT_ID --project-name ext-util
-wrangler pages secret put GOOGLE_CLIENT_SECRET --project-name ext-util
-wrangler pages secret put ADMIN_EMAILS --project-name ext-util
-wrangler pages secret put HMAC_SECRET --project-name ext-util
-wrangler pages secret put CDN_BASE_URL --project-name ext-util
-wrangler pages secret put APP_URL --project-name ext-util
+wrangler pages secret put GOOGLE_CLIENT_ID --project-name imgapi
+wrangler pages secret put GOOGLE_CLIENT_SECRET --project-name imgapi
+wrangler pages secret put ADMIN_EMAILS --project-name imgapi
+wrangler pages secret put HMAC_SECRET --project-name imgapi
+wrangler pages secret put CDN_BASE_URL --project-name imgapi
+wrangler pages secret put APP_URL --project-name imgapi
 ```
 *(Optionally put `RESEND_API_KEY` as well)*
 
