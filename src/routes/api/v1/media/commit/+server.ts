@@ -5,14 +5,14 @@ import { getEnv } from '$lib/server/config';
 export const POST: RequestHandler = async ({ request, platform, locals }) => {
 	try {
 		const body = await request.json();
-		const { object_key, associated_entity_type, associated_entity_id, user_id } = body;
+		const { object_key, associated_entity_type, associated_entity_id, user_id, uploader_user_id } = body;
 
 		if (!object_key) {
 			return json({ error: 'Missing object_key in request body.' }, { status: 400 });
 		}
 
-		// Determine user ID
-		const actorUserId = locals.user?.id || user_id || 1;
+		// Determine user ID (check both naming conventions to be safe)
+		const actorUserId = locals.user?.id || user_id || uploader_user_id || 1;
 
 		// 1. Fetch asset record from lifecycle ledger
 		const env = getEnv(platform?.env);
