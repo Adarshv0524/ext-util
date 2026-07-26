@@ -1,5 +1,5 @@
 {
-  "name": "ext-util",
+  "name": "imgapi",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -27,6 +27,8 @@
   "dependencies": {
     "@tiptap/core": "^2.11.0",
     "@tiptap/extension-image": "^2.11.0",
-    "@tiptap/starter-kit": "^2.11.0"
+    "@tiptap/starter-kit": "^2.11.0",
+    "arctic": "^3.7.0",
+    "resend": "^6.18.0"
   }
 }

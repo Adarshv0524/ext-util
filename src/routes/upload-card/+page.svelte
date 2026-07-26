@@ -80,7 +80,7 @@
 		if (isDemo) {
 			await new Promise(r => setTimeout(r, 1500)); // simulate delay
 			isUploading = false;
-			uploadSuccessUrl = 'https://util.avadhya.in/demo/demo_image.png';
+			uploadSuccessUrl = 'https://imgapi.avadhya.in/demo/demo_image.png';
 			return;
 		}
 

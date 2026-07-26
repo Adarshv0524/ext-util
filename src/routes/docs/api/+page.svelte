@@ -1,9 +1,9 @@
-<h1>API Reference</h1>
+<h1>Headless API Reference</h1>
 
-<p>If you prefer to build your own custom UI, you can use the headless API Client provided by ext-util.</p>
+<p>If you prefer to build your own custom drag-and-drop UI, you can use the headless API Client provided by imgapi to securely interface with the edge servers.</p>
 
 <h2>Using the Client Library</h2>
-<p>In your main application, you can use the <code>uploadToExtUtil</code> function. (You can copy <code>src/lib/client/media-client.ts</code> to your own project).</p>
+<p>In your main application, import the <code>uploadToExtUtil</code> function. You can copy the <code>src/lib/client/media-client.ts</code> file directly into your own project.</p>
 
 <pre><code>import &#123; uploadToExtUtil, commitExtUtilAsset &#125; from './media-client';
 
@@ -13,7 +13,7 @@ async function handleImageDrop(file) &#123;
     userId: 123,
     assetType: 'article_inline',
     projectId: 'my_blog_platform',
-    apiBaseUrl: 'https://util.avadhya.in'
+    apiBaseUrl: 'https://imgapi.avadhya.in'
   &#125;);
 
   if (result.error) &#123;
@@ -25,22 +25,32 @@ async function handleImageDrop(file) &#123;
   console.log("Uploaded! URL:", cdn_url);
 
   // Phase 3: Commit the asset to prevent orphan cleanup
-  await commitExtUtilAsset(object_key, 'articles', articleId, 123, 'https://util.avadhya.in');
+  await commitExtUtilAsset(object_key, 'articles', articleId, 123, 'https://imgapi.avadhya.in');
 &#125;</code></pre>
 
-<h2>Direct REST Endpoints</h2>
+<h2>REST API Details</h2>
+<p>The client library wraps these two core endpoints. Use this reference if you are building your own client from scratch in another language (like Python or Swift).</p>
 
-<h3>POST <code>/api/v1/media/upload-token</code></h3>
-<p>Requests a secure token to begin an edge upload.</p>
-<pre><code>// Request Body
-&#123;
-  "asset_type": "article_inline",
-  "mime_type": "image/png",
-  "file_size_bytes": 102400,
-  "file_name": "image.png",
-  "uploader_user_id": 123,
-  "project_id": "my_blog_platform" // Optional
-&#125;</code></pre>
-
-<h3>PUT <code>/upload/[...key]</code></h3>
-<p>Streams the raw binary directly into Cloudflare R2 using the token acquired from Phase 1.</p>
+<div class="overflow-x-auto my-6">
+  <table class="min-w-full text-left text-sm border-collapse border border-zinc-300">
+    <thead class="bg-zinc-200/50">
+      <tr>
+        <th class="p-3 border-b border-zinc-300 font-bold">Endpoint</th>
+        <th class="p-3 border-b border-zinc-300 font-bold">Method</th>
+        <th class="p-3 border-b border-zinc-300 font-bold">Purpose</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="p-3 border-b border-zinc-200 font-mono text-indigo-700">/api/v1/media/upload-token</td>
+        <td class="p-3 border-b border-zinc-200"><span class="px-2 py-1 bg-blue-100 text-blue-800 rounded font-bold text-xs">POST</span></td>
+        <td class="p-3 border-b border-zinc-200">Requests a short-lived, signed token for an upload.</td>
+      </tr>
+      <tr>
+        <td class="p-3 font-mono text-indigo-700">/upload/[...key]</td>
+        <td class="p-3"><span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded font-bold text-xs">PUT</span></td>
+        <td class="p-3">Streams the raw binary directly into Cloudflare R2 using the signed token.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>

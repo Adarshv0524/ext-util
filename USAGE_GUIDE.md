@@ -1,17 +1,17 @@
 # Usage Guide
 
-Because `ext-util` acts as an external microservice and upload store, it provides two primary ways for your main website (e.g., your Tiptap editor app) to interact with it: **The Embeddable Upload Card** and **The Direct API Client**.
+Because `imgapi` acts as an external microservice and upload store, it provides two primary ways for your main website (e.g., your Tiptap editor app) to interact with it: **The Embeddable Upload Card** and **The Direct API Client**.
 
 ## Method 1: Embeddable Image Upload Card (Iframe)
 
-You can embed the `ext-util` UI directly into your main website. This handles the drag-and-drop, validation, and multi-step upload protocol automatically.
+You can embed the `imgapi` UI directly into your main website. This handles the drag-and-drop, validation, and multi-step upload protocol automatically.
 
 ### 1. Embed the Iframe in your Main App
 
 ```html
 <!-- Inside your main application (e.g. Next.js, React, or SvelteKit) -->
 <iframe 
-  src="https://util.avadhya.in/upload-card" 
+  src="https://imgapi.avadhya.in/upload-card" 
   width="450" 
   height="400" 
   frameborder="0"
@@ -27,7 +27,7 @@ When the user drops an image into the iframe and it successfully uploads, the if
 // In your main application
 window.addEventListener('message', (event) => {
   // Always verify the origin in production!
-  // if (event.origin !== "https://util.avadhya.in") return;
+  // if (event.origin !== "https://imgapi.avadhya.in") return;
 
   const data = event.data;
   
@@ -61,7 +61,7 @@ async function handleImageDrop(file) {
     file: file,
     userId: 123, // Your user's ID
     assetType: 'article_inline',
-    apiBaseUrl: 'https://util.avadhya.in' // Point to your ext-util deployment
+    apiBaseUrl: 'https://imgapi.avadhya.in' // Point to your imgapi deployment
   });
 
   if (result.error) {
@@ -77,10 +77,10 @@ async function handleImageDrop(file) {
 
   // Phase 3: Commit the asset to prevent orphan cleanup
   // You can do this immediately, or later when the article is saved.
-  await commitExtUtilAsset(object_key, 'articles', articleId, 123, 'https://util.avadhya.in');
+  await commitExtUtilAsset(object_key, 'articles', articleId, 123, 'https://imgapi.avadhya.in');
 }
 ```
 
 ## CORS Details
 
-By default, the `ext-util` service has CORS enabled (`Access-Control-Allow-Origin: *`) on all `/api/*` and `/upload/*` routes via `src/hooks.server.ts`. If you move to production, you can lock this down to your main website's domain in the hook file.
+By default, the `imgapi` service has CORS enabled (`Access-Control-Allow-Origin: *`) on all `/api/*` and `/upload/*` routes via `src/hooks.server.ts`. If you move to production, you can lock this down to your main website's domain in the hook file.

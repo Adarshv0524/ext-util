@@ -1,43 +1,73 @@
-<h1>Embed Widget</h1>
+<h1>Widget Integration</h1>
 
 <p>
-  The easiest way to integrate ext-util into your application (e.g. a blog editor) is by using the pre-built, headless drag-and-drop widget.
+  The easiest way to integrate imgapi into your application is by using the pre-built, headless drag-and-drop widget.
+  It requires zero backend code and works out-of-the-box.
 </p>
 
 <h2>1. Embed the Iframe</h2>
 <p>Place this iframe anywhere in your main application (Next.js, SvelteKit, Vue, etc.):</p>
 <pre><code>&lt;iframe 
-  src="https://util.avadhya.in/upload-card" 
+  src="https://imgapi.avadhya.in/upload-card?project_id=my_blog_v1" 
   width="100%" 
   height="350" 
   style="border: none; border-radius: 8px;"
 &gt;&lt;/iframe&gt;</code></pre>
 
-<h2>2. Organization & Theming (Query Params)</h2>
-<p>You can pass query parameters to the URL to customize the upload destination and default UI states:</p>
-<ul>
-  <li><code>project_id</code>: (String) Organizes the uploaded image into a specific folder (e.g., <code>?project_id=my_blog</code>).</li>
-  <li><code>rounded</code>: (Boolean) Defaults the HTML snippet to have rounded corners (e.g., <code>?rounded=true</code>).</li>
-  <li><code>shadow</code>: (Boolean) Defaults the HTML snippet to have a box shadow (e.g., <code>?shadow=true</code>).</li>
-  <li><code>responsive</code>: (Boolean) Defaults the HTML snippet to be responsive (e.g., <code>?responsive=true</code>).</li>
-</ul>
+<h2>2. Configuration Parameters</h2>
+<p>You can customize the widget's behavior by passing query parameters directly in the iframe URL.</p>
+
+<div class="overflow-x-auto my-6">
+  <table class="min-w-full text-left text-sm border-collapse border border-zinc-300">
+    <thead class="bg-zinc-200/50">
+      <tr>
+        <th class="p-3 border-b border-zinc-300 font-bold">Parameter</th>
+        <th class="p-3 border-b border-zinc-300 font-bold">Type</th>
+        <th class="p-3 border-b border-zinc-300 font-bold">Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="p-3 border-b border-zinc-200 font-mono text-indigo-700">project_id</td>
+        <td class="p-3 border-b border-zinc-200">String</td>
+        <td class="p-3 border-b border-zinc-200">Organizes the uploaded image into a specific folder in the R2 bucket.</td>
+      </tr>
+      <tr>
+        <td class="p-3 border-b border-zinc-200 font-mono text-indigo-700">demo</td>
+        <td class="p-3 border-b border-zinc-200">Boolean</td>
+        <td class="p-3 border-b border-zinc-200">Set to <code>true</code> to test the UI without actually uploading files.</td>
+      </tr>
+      <tr>
+        <td class="p-3 border-b border-zinc-200 font-mono text-indigo-700">rounded</td>
+        <td class="p-3 border-b border-zinc-200">Boolean</td>
+        <td class="p-3 border-b border-zinc-200">Defaults the HTML export snippet to have rounded corners.</td>
+      </tr>
+      <tr>
+        <td class="p-3 border-b border-zinc-200 font-mono text-indigo-700">shadow</td>
+        <td class="p-3 border-b border-zinc-200">Boolean</td>
+        <td class="p-3 border-b border-zinc-200">Defaults the HTML export snippet to have a box shadow.</td>
+      </tr>
+      <tr>
+        <td class="p-3 font-mono text-indigo-700">responsive</td>
+        <td class="p-3">Boolean</td>
+        <td class="p-3">Defaults the HTML export snippet to use responsive widths.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
 
 <h2>3. Listen for Success Events</h2>
-<p>When an image is successfully uploaded, the widget fires a <code>postMessage</code> to the parent window containing the CDN URL.</p>
+<p>When an image is successfully uploaded, the widget fires a <code>postMessage</code> to your parent window.</p>
 <pre><code>window.addEventListener('message', (event) =&gt; &#123;
-  // Always verify the origin in production!
-  // if (event.origin !== "https://util.avadhya.in") return;
+  // Security: Always verify the origin in production!
+  // if (event.origin !== "https://imgapi.avadhya.in") return;
 
   const data = event.data;
   
   if (data &amp;&amp; data.type === 'EXT_UTIL_UPLOAD_SUCCESS') &#123;
-    console.log("Image uploaded successfully! CDN URL:", data.url);
+    console.log("Uploaded URL:", data.url);
     
-    // Example: Insert into Tiptap editor
+    // Example: Insert image into a Tiptap text editor
     // editor.chain().focus().setImage(&#123; src: data.url &#125;).run();
   &#125;
 &#125;);</code></pre>
-
-<div class="mt-8">
-  <a href="/docs/api" class="inline-block px-4 py-2 bg-black text-white font-medium rounded-md hover:bg-gray-800 transition-colors">Headless API Guide &rarr;</a>
-</div>

@@ -1,24 +1,57 @@
 <h1>Overview</h1>
 
-<p>
-  <strong>ext-util</strong> is a decoupled, edge-native image handling microservice. It allows your main application to securely offload all binary processing, storage, and bandwidth to Cloudflare's edge network.
+<p class="text-lg text-zinc-600 mb-8">
+  <strong>imgapi</strong> is an edge-native image handling microservice. It allows your main application to securely offload all binary processing, storage, and bandwidth directly to Cloudflare's edge network.
 </p>
 
-<h2>Why use a separate microservice?</h2>
-<ul>
-  <li><strong>Decoupling:</strong> Keep your main application lightweight. You don't need to parse multi-part forms or handle large binary payloads.</li>
-  <li><strong>Edge Performance:</strong> Images are uploaded directly from the user's browser to Cloudflare R2 object storage, providing zero-latency ingest.</li>
-  <li><strong>Security:</strong> Malicious files never hit your core servers. Magic-byte verification and HMAC signature validation happen natively on the edge.</li>
-  <li><strong>Zero Maintenance:</strong> Orphaned images (when a user aborts an upload) are automatically purged via Cloudflare D1 ledgers and Cron triggers.</li>
-</ul>
+<h2>Feature Comparison</h2>
+<div class="overflow-x-auto my-6">
+  <table class="min-w-full text-left text-sm border-collapse border border-zinc-300">
+    <thead class="bg-zinc-200/50">
+      <tr>
+        <th class="p-3 border-b border-zinc-300 font-bold">Feature</th>
+        <th class="p-3 border-b border-zinc-300 font-bold">Traditional Server</th>
+        <th class="p-3 border-b border-zinc-300 font-bold text-indigo-700">imgapi (Edge)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="p-3 border-b border-zinc-200">Upload Path</td>
+        <td class="p-3 border-b border-zinc-200">Client &rarr; Server &rarr; Storage</td>
+        <td class="p-3 border-b border-zinc-200 font-medium">Client &rarr; Storage</td>
+      </tr>
+      <tr>
+        <td class="p-3 border-b border-zinc-200">Bandwidth Cost</td>
+        <td class="p-3 border-b border-zinc-200">High (Billed twice)</td>
+        <td class="p-3 border-b border-zinc-200 font-medium">Zero (Direct to R2)</td>
+      </tr>
+      <tr>
+        <td class="p-3 border-b border-zinc-200">Security</td>
+        <td class="p-3 border-b border-zinc-200">Server exposed to malware</td>
+        <td class="p-3 border-b border-zinc-200 font-medium">Edge isolates malicious files</td>
+      </tr>
+      <tr>
+        <td class="p-3">Orphan Management</td>
+        <td class="p-3">Manual cron jobs</td>
+        <td class="p-3 font-medium">Automated D1 Ledgers</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
 
-<h2>How it works (The 3-Phase Protocol)</h2>
-<ol>
-  <li><strong>Phase 1 (Tokenization):</strong> The client requests an upload token. The server validates size/MIME limits and issues a short-lived, HMAC-SHA256 signed token.</li>
-  <li><strong>Phase 2 (Streaming):</strong> The client streams the raw binary directly to the Edge URL. The edge verifies the token signature and stores the file in R2.</li>
-  <li><strong>Phase 3 (Commitment):</strong> Once the image is attached to a database record (e.g. saving an article), the main app confirms the upload, protecting it from auto-cleanup.</li>
-</ol>
+<h2>Integration Options</h2>
+<p>Choose the integration path that best fits your technical requirements:</p>
 
-<div class="mt-8">
-  <a href="/docs/quickstart" class="inline-block px-4 py-2 bg-black text-white font-medium rounded-md hover:bg-gray-800 transition-colors">Go to Quickstart &rarr;</a>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+  <div class="border border-zinc-300 rounded-lg p-6 bg-zinc-200/20">
+    <h3 class="text-lg font-bold text-zinc-900 m-0 mb-2">1. Widget Integration</h3>
+    <p class="text-sm text-zinc-600 m-0 mb-4">Zero-code drag and drop iframe. Ideal for blog editors, SaaS avatars, and rapid deployment.</p>
+    <a href="/docs/embed" class="text-indigo-700 font-bold text-sm hover:underline">Read Guide &rarr;</a>
+  </div>
+  
+  <div class="border border-zinc-300 rounded-lg p-6 bg-zinc-200/20">
+    <h3 class="text-lg font-bold text-zinc-900 m-0 mb-2">2. Headless API</h3>
+    <p class="text-sm text-zinc-600 m-0 mb-4">Full custom UI control. Build your own dropzones utilizing our secure REST endpoints.</p>
+    <a href="/docs/api" class="text-indigo-700 font-bold text-sm hover:underline">Read Guide &rarr;</a>
+  </div>
 </div>

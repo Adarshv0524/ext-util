@@ -1,5 +1,5 @@
 /**
- * Client API for `ext-util` Image Microservice.
+ * Client API for `imgapi` Image Microservice.
  * This file can be used by the parent application to directly upload images
  * without needing an iframe, or it can be used internally by the Upload Card.
  */
@@ -9,7 +9,7 @@ export interface UploadOptions {
 	userId?: number;
 	assetType?: string;
 	projectId?: string;
-	apiBaseUrl?: string; // e.g. "https://ext-util.example.com"
+	apiBaseUrl?: string; // e.g. "https://imgapi.example.com"
 }
 
 export interface UploadResult {
@@ -19,7 +19,7 @@ export interface UploadResult {
 }
 
 /**
- * Uploads a file directly to the Cloudflare R2 bucket via the ext-util API.
+ * Uploads a file directly to the Cloudflare R2 bucket via the imgapi API.
  * Phase 1: Request Upload Token
  * Phase 2: Stream Binary to Edge
  */
@@ -71,7 +71,7 @@ export async function uploadToExtUtil(options: UploadOptions): Promise<UploadRes
 			cdn_url: uploadData.cdn_url
 		};
 	} catch (error: any) {
-		console.error('ext-util Upload Error:', error);
+		console.error('imgapi Upload Error:', error);
 		return {
 			object_key: '',
 			cdn_url: '',

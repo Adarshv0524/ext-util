@@ -1,7 +1,7 @@
 <h1>Image Organization</h1>
 
 <p>
-  When integrating <strong>ext-util</strong> into your application, you don't want all your users' images dumped into a single giant folder. 
+  When integrating <strong>imgapi</strong> into your application, you don't want all your users' images dumped into a single giant folder. 
   Our utility provides built-in <strong>project-based organization</strong> so you know exactly where everything is stored in your Cloudflare R2 bucket.
 </p>
 
@@ -20,7 +20,7 @@
 
 <h3>Method 1: Via the Embed Widget (Easiest)</h3>
 <p>If you are using the iframe widget, simply append <code>project_id=YOUR_FOLDER_NAME</code> to the URL:</p>
-<pre><code>&lt;iframe src="https://util.avadhya.in/upload-card?project_id=my_cool_blog"&gt;&lt;/iframe&gt;</code></pre>
+<pre><code>&lt;iframe src="https://imgapi.avadhya.in/upload-card?project_id=my_cool_blog"&gt;&lt;/iframe&gt;</code></pre>
 <p>If a user named "Alice" (User ID: 123) uploads an avatar using this widget, the file will be saved precisely here:</p>
 <pre><code>uploads/my_cool_blog/avatar/123_1700000000.png</code></pre>
 

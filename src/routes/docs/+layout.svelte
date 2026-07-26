@@ -3,10 +3,9 @@
 
 	const nav = [
 		{ name: 'Overview', href: '/docs' },
-		{ name: 'Quickstart', href: '/docs/quickstart' },
-		{ name: 'Embed Widget', href: '/docs/embed' },
-		{ name: 'API Reference', href: '/docs/api' },
-		{ name: 'Image Organization', href: '/docs/organization' }
+		{ name: 'Widget Integration', href: '/docs/embed' },
+		{ name: 'Headless API', href: '/docs/api' },
+		{ name: 'Folder Organization', href: '/docs/organization' }
 	];
 
 	$: currentIndex = nav.findIndex(item => item.href === $page.url.pathname);
@@ -22,7 +21,7 @@
 			<svg class="w-5 h-5 text-indigo-700" viewBox="0 0 24 24" fill="currentColor">
 				<path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="2" stroke-linejoin="round" fill="none"/>
 			</svg>
-			ext-util docs
+			imgapi docs
 		</a>
 	</header>
 

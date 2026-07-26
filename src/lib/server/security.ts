@@ -1,5 +1,5 @@
 /**
- * Security Engine for ext-util Image Microservice.
+ * Security Engine for imgapi Image Microservice.
  * Uses 100% Web Crypto API for zero external dependency HMAC signing,
  * timing-safe string comparison, and magic-byte binary MIME inspection.
  */

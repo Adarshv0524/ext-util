@@ -1,5 +1,5 @@
 /**
- * Shared Constants for ext-util Image Microservice.
+ * Shared Constants for imgapi Image Microservice.
  * 
  * Centralizes all constants and limits used by both client and server.
  * Changing values here will automatically reflect in the frontend documentation
@@ -41,10 +41,10 @@ export const CORE_SETTINGS = {
  */
 export const ENV_DEFAULTS = {
 	/** Default fallback HMAC key. MUST BE OVERRIDDEN IN PRODUCTION. */
-	HMAC_SECRET: 'ext-util-secret-key-change-in-prod',
+	HMAC_SECRET: 'imgapi-secret-key-change-in-prod',
 	
 	/** The default domain used to construct public image URLs. */
-	CDN_BASE_URL: 'https://util.avadhya.in',
+	CDN_BASE_URL: 'https://imgapi.avadhya.in',
 };
 
 // ==========================================

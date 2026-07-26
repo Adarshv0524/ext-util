@@ -1,9 +1,9 @@
 <script lang="ts">
-	// Main landing page for util.avadhya.in
+	// Main landing page for imgapi.avadhya.in
 </script>
 
 <svelte:head>
-	<title>ext-util | The Edge-Native Image Microservice</title>
+	<title>imgapi | The Edge-Native Image Microservice</title>
 </svelte:head>
 
 <div class="min-h-screen bg-transparent text-zinc-900 font-sans selection:bg-indigo-600 selection:text-white relative z-10">
@@ -13,11 +13,11 @@
 			<svg class="w-6 h-6 text-indigo-700" viewBox="0 0 24 24" fill="currentColor">
 				<path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="2" stroke-linejoin="round" fill="none"/>
 			</svg>
-			ext-util
+			imgapi
 		</div>
 		<div class="flex items-center gap-6 text-sm font-medium">
 			<a href="/docs" class="text-zinc-600 hover:text-zinc-900 transition-colors">Documentation</a>
-			<a href="https://github.com/Adarshv0524/ext-util" target="_blank" class="text-zinc-600 hover:text-zinc-900 transition-colors">GitHub</a>
+			<a href="https://github.com/Adarshv0524/imgapi" target="_blank" class="text-zinc-600 hover:text-zinc-900 transition-colors">GitHub</a>
 			<a href="/docs/quickstart" class="px-4 py-2 bg-indigo-700 text-white rounded-md hover:bg-indigo-800 transition-colors shadow-sm">Get Started</a>
 		</div>
 	</nav>
@@ -64,7 +64,7 @@
 					<iframe 
 						src="/upload-card?demo=true&project_id=demo_project&rounded=true" 
 						class="w-full flex-1" 
-						title="ext-util upload card demo"
+						title="imgapi upload card demo"
 					></iframe>
 				</div>
 			</div>
@@ -111,6 +111,6 @@
 	</section>
 
 	<footer class="border-t border-zinc-400/30 py-12 text-center">
-		<p class="text-sm font-medium text-zinc-600">&copy; {new Date().getFullYear()} Avadhya. The Ext-Util Microservice.</p>
+		<p class="text-sm font-medium text-zinc-600">&copy; {new Date().getFullYear()} Avadhya. The ImgAPI Microservice.</p>
 	</footer>
 </div>

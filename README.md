@@ -1,20 +1,20 @@
-# 🌐 ext-util (util.avadhya.in)
+# 🌐 imgapi (imgapi.avadhya.in)
 **A Decoupled, Edge-Native Image Handling Microservice**
 
-`ext-util` is a high-performance, standalone Image Microservice built entirely in SvelteKit and designed exclusively for the Cloudflare edge environment. 
+`imgapi` is a high-performance, standalone Image Microservice built entirely in SvelteKit and designed exclusively for the Cloudflare edge environment. 
 
-It acts as an **external utility API and Add-on store** designed to securely handle image uploads for other websites (such as a main site hosting a Tiptap editor). By offloading image handling to `ext-util`, your main application remains decoupled from binary storage logic and bandwidth.
+It acts as an **external utility API and Add-on store** designed to securely handle image uploads for other websites (such as a main site hosting a Tiptap editor). By offloading image handling to `imgapi`, your main application remains decoupled from binary storage logic and bandwidth.
 
 ---
 
 ## 🎯 Precise Project Aims
 
-The primary goal of `ext-util` is to act as a **centralized external utility API** that handles all heavy lifting related to image uploads for the broader Avadhya ecosystem. 
+The primary goal of `imgapi` is to act as a **centralized external utility API** that handles all heavy lifting related to image uploads for the broader Avadhya ecosystem. 
 
 By offloading this responsibility to a dedicated microservice, we achieve:
-1. **Decoupling**: The main application no longer has to process large binary payloads, manage S3 buckets, or deal with multi-part form parsing. It simply asks `ext-util` to do it, and receives a public URL in return.
+1. **Decoupling**: The main application no longer has to process large binary payloads, manage S3 buckets, or deal with multi-part form parsing. It simply asks `imgapi` to do it, and receives a public URL in return.
 2. **Edge Performance**: Uploads stream directly from the user's browser into Cloudflare R2 object storage at the network edge, bypassing any middleman servers and reducing latency drastically.
-3. **Security by Isolation**: The main application never handles image files directly, mitigating the risk of malicious file uploads taking down the core server. `ext-util` handles magic-byte verification and HMAC signature validation natively on the edge.
+3. **Security by Isolation**: The main application never handles image files directly, mitigating the risk of malicious file uploads taking down the core server. `imgapi` handles magic-byte verification and HMAC signature validation natively on the edge.
 4. **Automated Cleanup (Orphan Management)**: Using a 3-Phase upload protocol and an SQLite ledger (Cloudflare D1), the microservice guarantees that images abandoned during upload (e.g., the user closes the tab before finishing) are automatically purged, saving storage costs.
 
 ---

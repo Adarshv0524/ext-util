@@ -13,7 +13,7 @@ export interface CommitAssetResponse {
 }
 
 /**
- * Phase 1: Request presigned upload token from ext-util backend.
+ * Phase 1: Request presigned upload token from imgapi backend.
  */
 export async function requestUploadToken(params: {
 	asset_type:
