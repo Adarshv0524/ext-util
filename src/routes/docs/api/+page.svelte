@@ -54,3 +54,24 @@ async function handleImageDrop(file) &#123;
     </tbody>
   </table>
 </div>
+
+<h2>On-The-Fly Image Transformations</h2>
+<p>If you're retrieving images, you can apply native Cloudflare Edge resizing simply by passing query parameters to the URL.</p>
+<pre><code>// Example: Fetch a 300x300 thumbnail, heavily blurred
+const url = "https://imgapi.avadhya.in/upload/my_asset.jpg?w=300&h=300&blur=50&q=80";</code></pre>
+<ul class="list-disc ml-6 mt-4 text-sm text-zinc-700 space-y-1">
+  <li><code>w</code> - Width in pixels</li>
+  <li><code>h</code> - Height in pixels</li>
+  <li><code>q</code> - Quality (1-100)</li>
+  <li><code>blur</code> - Blur radius</li>
+</ul>
+
+<h2 class="mt-8">Webhook Integration</h2>
+<p>You can configure a Webhook URL in your Project Settings via the Dashboard. When an upload is successfully committed, imgapi will instantly fire a POST request to your URL.</p>
+<pre><code>// Webhook Payload Example
+&#123;
+  "event": "upload.committed",
+  "object_key": "uploads/123/my_blog_v1/image.png",
+  "cdn_url": "https://cdn.example.com/uploads/123/my_blog_v1/image.png",
+  "committed_at": "2023-10-01T12:00:00Z"
+&#125;</code></pre>

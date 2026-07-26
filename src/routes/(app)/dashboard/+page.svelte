@@ -88,6 +88,15 @@
 								Regenerate Secret...
 							</button>
 						</form>
+
+						<form method="POST" action="?/updateWebhook" use:enhance class="mt-4 border-t border-zinc-200 pt-4">
+							<div class="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Webhook URL</div>
+							<div class="flex items-center gap-2">
+								<input type="url" name="webhookUrl" value={project.webhook_url || ''} placeholder="https://api.example.com/webhook" class="flex-1 text-sm bg-zinc-50 border border-zinc-300 rounded px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500" />
+								<button type="submit" class="px-3 py-1.5 bg-zinc-800 text-white text-xs font-bold rounded hover:bg-zinc-700 transition">Save</button>
+							</div>
+							<input type="hidden" name="projectId" value={project.id} />
+						</form>
 					</div>
 				</div>
 			{/each}

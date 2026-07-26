@@ -75,5 +75,23 @@ export const actions: Actions = {
 		await db.prepare('UPDATE projects SET hmac_secret = ? WHERE id = ?').bind(newSecret, projectId).run();
 
 		return { success: true };
+	},
+
+	updateWebhook: async ({ request, platform, locals }) => {
+		if (!locals.user || locals.user.status !== 'APPROVED') throw error(403, "Unauthorized");
+		const db = platform?.env?.MEDIA_DB;
+		if (!db) throw error(500, "DB unavailable");
+
+		const data = await request.formData();
+		const projectId = data.get('projectId') as string;
+		const webhookUrl = data.get('webhookUrl') as string;
+
+		// Verify ownership
+		const project = await db.prepare('SELECT id FROM projects WHERE id = ? AND user_id = ?').bind(projectId, locals.user.id).first();
+		if (!project) throw error(403, "Forbidden");
+
+		await db.prepare('UPDATE projects SET webhook_url = ? WHERE id = ?').bind(webhookUrl || null, projectId).run();
+
+		return { success: true };
 	}
 };

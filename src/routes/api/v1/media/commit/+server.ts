@@ -49,6 +49,37 @@ export const POST: RequestHandler = async ({ request, platform, locals }) => {
 			associated_entity_id
 		);
 
+		// 5. Fire webhook if configured
+		try {
+			const parts = object_key.split('/');
+			if (parts.length >= 3 && parts[0] === 'uploads') {
+				const projectSlug = parts[2];
+				const project = await env.MEDIA_DB.prepare('SELECT webhook_url FROM projects WHERE project_slug = ? AND user_id = ?').bind(projectSlug, actorUserId).first();
+				
+				if (project && project.webhook_url) {
+					const webhookPayload = {
+						event: 'upload.committed',
+						object_key: object_key,
+						cdn_url: asset.public_url,
+						committed_at: updatedRecord?.committed_at || new Date().toISOString(),
+						associated_entity_type: updatedRecord?.associated_entity_type || null,
+						associated_entity_id: updatedRecord?.associated_entity_id || null
+					};
+					
+					// Fire and forget
+					platform?.context?.waitUntil(
+						fetch(project.webhook_url as string, {
+							method: 'POST',
+							headers: { 'Content-Type': 'application/json' },
+							body: JSON.stringify(webhookPayload)
+						}).catch(e => console.error("Webhook failed:", e))
+					);
+				}
+			}
+		} catch (e) {
+			console.error("Webhook processing error:", e);
+		}
+
 		return json({
 			object_key: object_key,
 			cdn_url: asset.public_url,
