@@ -1,6 +1,6 @@
 export interface MediaAssetRecord {
 	id: string;
-	uploader_user_id: number;
+	uploader_user_id: string;
 	r2_object_key: string;
 	public_url: string;
 	asset_type:
@@ -29,7 +29,7 @@ const localInMemoryStore = new Map<string, MediaAssetRecord>();
 export async function createUncommittedAsset(
 	env: App.Platform['env'] | undefined,
 	asset: {
-		uploader_user_id: number;
+		uploader_user_id: string;
 		r2_object_key: string;
 		public_url: string;
 		asset_type: MediaAssetRecord['asset_type'];

@@ -1,5 +1,5 @@
 <script lang="ts">
-	// Main landing page for imgapi.avadhya.in
+	let { data } = $props();
 </script>
 
 <svelte:head>
@@ -18,7 +18,11 @@
 		<div class="flex items-center gap-6 text-sm font-medium">
 			<a href="/docs" class="text-zinc-600 hover:text-zinc-900 transition-colors">Documentation</a>
 			<a href="https://github.com/Adarshv0524/imgapi" target="_blank" class="text-zinc-600 hover:text-zinc-900 transition-colors">GitHub</a>
-			<a href="/docs/quickstart" class="px-4 py-2 bg-indigo-700 text-white rounded-md hover:bg-indigo-800 transition-colors shadow-sm">Get Started</a>
+			{#if data.user}
+				<a href="/dashboard" class="px-4 py-2 bg-zinc-200 text-zinc-900 rounded-md hover:bg-zinc-300 transition-colors shadow-sm font-semibold">Dashboard</a>
+			{:else}
+				<a href="/login/google" class="px-4 py-2 bg-indigo-700 text-white rounded-md hover:bg-indigo-800 transition-colors shadow-sm">Login</a>
+			{/if}
 		</div>
 	</nav>
 
@@ -42,7 +46,7 @@
 					<a href="/docs" class="px-6 py-3 bg-indigo-700 text-white font-medium rounded-lg hover:bg-indigo-800 transition-all shadow-md">
 						Read the Docs
 					</a>
-					<button on:click={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })} class="px-6 py-3 bg-zinc-200/50 text-zinc-900 font-medium border border-zinc-400/50 rounded-lg hover:bg-zinc-200 transition-colors shadow-sm">
+					<button onclick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })} class="px-6 py-3 bg-zinc-200/50 text-zinc-900 font-medium border border-zinc-400/50 rounded-lg hover:bg-zinc-200 transition-colors shadow-sm">
 						View Features
 					</button>
 				</div>

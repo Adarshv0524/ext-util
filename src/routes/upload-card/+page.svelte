@@ -87,7 +87,6 @@
 		const result = await uploadToExtUtil({
 			file,
 			assetType: 'article_inline',
-			userId: 1,
 			projectId: projectId
 		});
 

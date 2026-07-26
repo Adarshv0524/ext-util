@@ -7,9 +7,7 @@ export const GET: RequestHandler = async (event) => {
 	const state = generateState();
 	const codeVerifier = generateCodeVerifier();
 
-	const url = await google.createAuthorizationURL(state, codeVerifier, {
-		scopes: ['profile', 'email']
-	});
+	const url = google.createAuthorizationURL(state, codeVerifier, ['profile', 'email']);
 
 	event.cookies.set('google_oauth_state', state, {
 		path: '/',

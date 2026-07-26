@@ -50,7 +50,7 @@ async function getHmacKey(secret: string): Promise<CryptoKey> {
  */
 export async function generateUploadToken(
 	objectKey: string,
-	userId: number,
+	userId: string,
 	mimeType: string,
 	expiresAt: number,
 	secret: string = ENV_DEFAULTS.HMAC_SECRET
@@ -77,7 +77,7 @@ export async function generateUploadToken(
  */
 export async function verifyUploadToken(
 	objectKey: string,
-	userId: number,
+	userId: string,
 	mimeType: string,
 	expiresAt: number,
 	signature: string,

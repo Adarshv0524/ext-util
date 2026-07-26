@@ -10,7 +10,7 @@ import { ASSET_SIZE_LIMITS, ALLOWED_MIME_TYPES } from '$lib/constants';
 describe('Security Engine & HMAC Validation', () => {
 	it('should generate deterministic HMAC tokens and verify them successfully', async () => {
 		const key = 'uploads/user_avatar/42_12345678_abcd.webp';
-		const userId = 42;
+		const userId = '42';
 		const mime = 'image/webp';
 		const expiresAt = Math.floor(Date.now() / 1000) + 300; // 5 min TTL
 		const secret = 'test-hmac-secret-12345';
@@ -25,7 +25,7 @@ describe('Security Engine & HMAC Validation', () => {
 
 	it('should reject forged or tampered tokens', async () => {
 		const key = 'uploads/user_avatar/42_12345678_abcd.webp';
-		const userId = 42;
+		const userId = '42';
 		const mime = 'image/webp';
 		const expiresAt = Math.floor(Date.now() / 1000) + 300;
 		const secret = 'test-hmac-secret-12345';
@@ -33,7 +33,7 @@ describe('Security Engine & HMAC Validation', () => {
 		const token = await generateUploadToken(key, userId, mime, expiresAt, secret);
 
 		// Tamper with userId or object key
-		const isUserValid = await verifyUploadToken(key, 999, mime, expiresAt, token, secret);
+		const isUserValid = await verifyUploadToken(key, '999', mime, expiresAt, token, secret);
 		expect(isUserValid).toBe(false);
 
 		const isKeyValid = await verifyUploadToken('uploads/forged.png', userId, mime, expiresAt, token, secret);
@@ -42,7 +42,7 @@ describe('Security Engine & HMAC Validation', () => {
 
 	it('should reject expired tokens', async () => {
 		const key = 'uploads/user_avatar/42_expired.webp';
-		const userId = 42;
+		const userId = '42';
 		const mime = 'image/webp';
 		const expiresAt = Math.floor(Date.now() / 1000) - 10; // 10 seconds ago
 		const secret = 'test-hmac-secret';

@@ -13,7 +13,7 @@ export const DELETE: RequestHandler = async ({ params, platform, locals, url }) 
 
 		// 1. Fetch asset record
 		const asset = await getAssetByKey(platform?.env, objectKey);
-		if (asset && asset.uploader_user_id !== actorUserId && locals.user?.role !== 'admin') {
+		if (asset && asset.uploader_user_id !== actorUserId && locals.user?.role !== 'ADMIN') {
 			return json(
 				{ error: 'Forbidden: You do not own this media asset.' },
 				{ status: 403 }

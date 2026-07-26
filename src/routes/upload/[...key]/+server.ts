@@ -15,7 +15,7 @@ export const PUT: RequestHandler = async ({ params, url, request, platform }) =>
 
 		// 1. Extract query params & headers
 		const userIdStr = url.searchParams.get('user_id') || '1';
-		const userId = parseInt(userIdStr, 10);
+		const userId = userIdStr;
 		const mimeType = url.searchParams.get('mime') || request.headers.get('content-type') || '';
 		const expiresStr = url.searchParams.get('expires') || '0';
 		const expiresAt = parseInt(expiresStr, 10);

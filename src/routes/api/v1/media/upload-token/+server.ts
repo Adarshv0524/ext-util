@@ -16,11 +16,27 @@ export const POST: RequestHandler = async ({ request, platform, locals }) => {
 			project_id
 		} = body;
 
-		// 1. Auth & User ID determination
-		const userId =
-			locals.user?.id ||
-			uploader_user_id ||
-			1; // Default fallback for dev/demo
+		// 1. Auth & Validation
+		let userId = locals.user?.id;
+		
+		// If project_id is provided, we MUST validate it and derive the userId from it
+		let projectRecord = null;
+		if (project_id && typeof project_id === 'string' && platform?.env?.MEDIA_DB) {
+			const db = platform.env.MEDIA_DB;
+			projectRecord = await db.prepare("SELECT user_id, hmac_secret FROM projects WHERE id = ?").bind(project_id).first();
+			if (!projectRecord) {
+				return json({ error: 'Invalid project ID.' }, { status: 401 });
+			}
+			// If logged in, ensure ownership
+			if (userId && projectRecord.user_id !== userId) {
+				return json({ error: 'Unauthorized to upload to this project.' }, { status: 403 });
+			}
+			userId = projectRecord.user_id;
+		}
+
+		if (!userId) {
+			return json({ error: 'Authentication required. Please provide a valid project_id or log in.' }, { status: 401 });
+		}
 
 		if (!asset_type || !ASSET_SIZE_LIMITS[asset_type]) {
 			return json(
@@ -78,17 +94,8 @@ export const POST: RequestHandler = async ({ request, platform, locals }) => {
 
 		// 6.5 Lookup project HMAC secret
 		let hmacSecret = env.HMAC_SECRET;
-		
-		if (project_id && platform?.env?.MEDIA_DB) {
-			try {
-				const db = platform.env.MEDIA_DB;
-				const project = await db.prepare("SELECT hmac_secret FROM projects WHERE project_slug = ?").bind(project_id).first();
-				if (project && project.hmac_secret) {
-					hmacSecret = project.hmac_secret as string;
-				}
-			} catch (e) {
-				console.error("Failed to fetch project hmac:", e);
-			}
+		if (projectRecord && projectRecord.hmac_secret) {
+			hmacSecret = projectRecord.hmac_secret as string;
 		}
 
 		if (!hmacSecret) {

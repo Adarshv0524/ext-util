@@ -1,4 +1,5 @@
 <script lang="ts">
+	let { data, children } = $props();
 	import { page } from '$app/stores';
 
 	const nav = [
@@ -8,10 +9,10 @@
 		{ name: 'Folder Organization', href: '/docs/organization' }
 	];
 
-	$: currentIndex = nav.findIndex(item => item.href === $page.url.pathname);
-	$: prevPage = currentIndex > 0 ? nav[currentIndex - 1] : null;
-	$: nextPage = currentIndex < nav.length - 1 ? nav[currentIndex + 1] : null;
-	$: currentPage = nav[currentIndex] || nav[0];
+	let currentIndex = $derived(nav.findIndex(item => item.href === $page.url.pathname));
+	let prevPage = $derived(currentIndex > 0 ? nav[currentIndex - 1] : null);
+	let nextPage = $derived(currentIndex < nav.length - 1 ? nav[currentIndex + 1] : null);
+	let currentPage = $derived(nav[currentIndex] || nav[0]);
 </script>
 
 <div class="min-h-screen bg-transparent text-zinc-900 font-sans flex flex-col relative z-10 selection:bg-indigo-600 selection:text-white">
@@ -23,6 +24,13 @@
 			</svg>
 			imgapi docs
 		</a>
+		<div class="flex items-center gap-4 text-sm font-medium">
+			{#if data.user}
+				<a href="/dashboard" class="px-4 py-2 bg-zinc-200 text-zinc-900 rounded-md hover:bg-zinc-300 transition-colors shadow-sm font-semibold">Dashboard</a>
+			{:else}
+				<a href="/login/google" class="px-4 py-2 bg-indigo-700 text-white rounded-md hover:bg-indigo-800 transition-colors shadow-sm">Login</a>
+			{/if}
+		</div>
 	</header>
 
 	<div class="flex-1 max-w-6xl w-full mx-auto flex flex-col md:flex-row">
@@ -51,7 +59,7 @@
 			</div>
 
 			<div class="prose prose-sm sm:prose-base max-w-none">
-				<slot />
+				{@render children()}
 			</div>
 
 			<!-- Next / Prev Navigation -->

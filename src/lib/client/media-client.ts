@@ -6,7 +6,6 @@
 
 export interface UploadOptions {
 	file: File;
-	userId?: number;
 	assetType?: string;
 	projectId?: string;
 	apiBaseUrl?: string; // e.g. "https://imgapi.example.com"
@@ -24,7 +23,7 @@ export interface UploadResult {
  * Phase 2: Stream Binary to Edge
  */
 export async function uploadToExtUtil(options: UploadOptions): Promise<UploadResult> {
-	const { file, userId = 1, assetType = 'article_inline', projectId, apiBaseUrl = '' } = options;
+	const { file, assetType = 'article_inline', projectId, apiBaseUrl = '' } = options;
 
 	try {
 		// Phase 1: Request Token
@@ -36,7 +35,6 @@ export async function uploadToExtUtil(options: UploadOptions): Promise<UploadRes
 				mime_type: file.type,
 				file_size_bytes: file.size,
 				file_name: file.name,
-				uploader_user_id: userId,
 				project_id: projectId
 			})
 		});

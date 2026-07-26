@@ -22,7 +22,7 @@
 				</div>
 				<form method="POST" action="?/toggleAutoApprove" use:enhance>
 					<input type="hidden" name="autoApprove" value={!data.autoApprove ? 'true' : 'false'} />
-					<button type="submit" class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors {data.autoApprove ? 'bg-indigo-600' : 'bg-zinc-400'}">
+					<button type="submit" aria-label="Toggle auto-approve" class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors {data.autoApprove ? 'bg-indigo-600' : 'bg-zinc-400'}">
 						<span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform {data.autoApprove ? 'translate-x-6' : 'translate-x-1'}"></span>
 					</button>
 				</form>

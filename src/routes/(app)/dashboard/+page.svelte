@@ -22,9 +22,12 @@
 				<h1 class="text-3xl font-bold text-zinc-900">Welcome, {data.user.name || 'Developer'}</h1>
 				<p class="text-zinc-600 mt-2">Manage your imgapi projects and API secrets.</p>
 			</div>
-			{#if data.user.role === 'ADMIN'}
-				<a href="/admin" class="px-4 py-2 bg-zinc-800 text-white text-sm font-bold rounded-lg hover:bg-zinc-700 transition">Go to Admin Dashboard</a>
-			{/if}
+			<div class="flex items-center gap-4">
+				<a href="mailto:theawadhilanguage@gmail.com" class="text-zinc-600 hover:text-zinc-900 text-sm font-medium transition">Contact Support</a>
+				{#if data.user.role === 'ADMIN'}
+					<a href="/admin" class="px-4 py-2 bg-zinc-800 text-white text-sm font-bold rounded-lg hover:bg-zinc-700 transition">Go to Admin Dashboard</a>
+				{/if}
+			</div>
 		</div>
 
 		<!-- Projects -->

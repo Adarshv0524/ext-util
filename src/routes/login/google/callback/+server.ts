@@ -63,12 +63,10 @@ export const GET: RequestHandler = async (event) => {
 				'INSERT INTO users (id, google_id, email, name, picture, role, status) VALUES (?, ?, ?, ?, ?, ?, ?)'
 			).bind(userId, googleUser.sub, googleUser.email, googleUser.name, googleUser.picture, role, status).run();
 
-			if (status === 'PENDING') {
-				// Send email via Resend in the background
-				event.platform?.context?.waitUntil(
-					sendAdminNotification(googleUser.email, googleUser.name)
-				);
-			}
+			// Send email via Resend in the background for ALL new signups
+			event.platform?.context?.waitUntil(
+				sendAdminNotification(googleUser.email, googleUser.name)
+			);
 		}
 
 		// 2. Create session
