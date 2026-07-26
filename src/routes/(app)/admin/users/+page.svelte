@@ -9,23 +9,36 @@
 <div class="p-6 lg:p-8 max-w-6xl mx-auto space-y-8">
 	<Breadcrumbs items={[{ name: 'Admin', href: '/admin' }, { name: 'Manage Users' }]} />
 
-	<!-- Header -->
-	<div class="flex items-center justify-between">
+	<!-- Header & Settings -->
+	<div class="flex flex-col lg:flex-row gap-6 lg:items-start justify-between">
 		<div>
 			<h1 class="text-3xl font-bold text-zinc-900">Manage Users</h1>
 			<p class="text-zinc-600 mt-2">Manage developer access and system settings.</p>
 		</div>
 		
-		<div class="bg-white p-4 rounded-xl border border-zinc-300 flex items-center gap-4 shadow-sm">
-			<div>
-				<h3 class="font-bold text-sm text-zinc-900">Auto-Approve Users</h3>
-				<p class="text-xs text-zinc-600">New signups bypass the waiting list</p>
+		<div class="flex flex-col gap-4 md:min-w-[320px]">
+			<div class="bg-white p-4 rounded-xl border border-zinc-300 flex items-center gap-4 shadow-sm w-full">
+				<div class="flex-1">
+					<h3 class="font-bold text-sm text-zinc-900">Auto-Approve Users</h3>
+					<p class="text-xs text-zinc-600">New signups bypass the waiting list</p>
+				</div>
+				<form method="POST" action="?/toggleAutoApprove" use:enhance>
+					<input type="hidden" name="autoApprove" value={!data.autoApprove ? 'true' : 'false'} />
+					<button type="submit" aria-label="Toggle auto-approve" class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors {data.autoApprove ? 'bg-indigo-600' : 'bg-zinc-400'}">
+						<span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform {data.autoApprove ? 'translate-x-6' : 'translate-x-1'}"></span>
+					</button>
+				</form>
 			</div>
-			<form method="POST" action="?/toggleAutoApprove" use:enhance>
-				<input type="hidden" name="autoApprove" value={!data.autoApprove ? 'true' : 'false'} />
-				<button type="submit" aria-label="Toggle auto-approve" class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors {data.autoApprove ? 'bg-indigo-600' : 'bg-zinc-400'}">
-					<span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform {data.autoApprove ? 'translate-x-6' : 'translate-x-1'}"></span>
-				</button>
+
+			<form method="POST" action="?/updateNotificationEmails" use:enhance class="bg-white p-4 rounded-xl border border-zinc-300 flex flex-col gap-3 shadow-sm w-full">
+				<div>
+					<h3 class="font-bold text-sm text-zinc-900">Notification Emails</h3>
+					<p class="text-xs text-zinc-600">Comma-separated emails to notify on signup</p>
+				</div>
+				<div class="flex items-center gap-2">
+					<input type="text" name="emails" value={data.notificationEmails} placeholder="admin@example.com" class="flex-1 text-sm bg-zinc-50 border border-zinc-300 rounded px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500" />
+					<button type="submit" class="px-3 py-1.5 bg-zinc-800 text-white text-xs font-bold rounded hover:bg-zinc-700 transition">Save</button>
+				</div>
 			</form>
 		</div>
 	</div>

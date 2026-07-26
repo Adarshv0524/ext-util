@@ -64,9 +64,18 @@ export const GET: RequestHandler = async (event) => {
 				'INSERT INTO users (id, google_id, email, name, picture, role, status) VALUES (?, ?, ?, ?, ?, ?, ?)'
 			).bind(userId, googleUser.sub, googleUser.email, googleUser.name, googleUser.picture, role, status).run();
 
+			// Get notification emails setting
+			let adminEmailsOverride = undefined;
+			try {
+				const setting = await db.prepare("SELECT value FROM settings WHERE key = 'ADMIN_NOTIFICATION_EMAILS'").first();
+				if (setting && setting.value) adminEmailsOverride = setting.value as string;
+			} catch (e) {
+				console.error("Failed to read admin notification emails setting", e);
+			}
+
 			// Send email via Resend in the background for ALL new signups
 			event.platform?.context?.waitUntil(
-				sendAdminNotification(googleUser.email, googleUser.name)
+				sendAdminNotification(googleUser.email, googleUser.name, adminEmailsOverride)
 			);
 		}
 

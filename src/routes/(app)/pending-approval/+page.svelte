@@ -1,3 +1,30 @@
+<script lang="ts">
+	import { onMount, onDestroy } from 'svelte';
+	import { goto } from '$app/navigation';
+
+	let pollInterval: ReturnType<typeof setInterval>;
+
+	onMount(() => {
+		pollInterval = setInterval(async () => {
+			try {
+				const res = await fetch('/api/auth/status');
+				if (res.ok) {
+					const data = await res.json();
+					if (data.status === 'APPROVED') {
+						goto('/dashboard');
+					}
+				}
+			} catch (e) {
+				console.error("Polling error", e);
+			}
+		}, 5000); // Check every 5 seconds
+	});
+
+	onDestroy(() => {
+		if (pollInterval) clearInterval(pollInterval);
+	});
+</script>
+
 <div class="min-h-screen bg-zinc-300 text-zinc-900 flex items-center justify-center p-6">
 	<div class="max-w-md w-full bg-zinc-200/50 backdrop-blur-md rounded-2xl p-8 border border-zinc-400/50 shadow-xl text-center">
 		<div class="w-16 h-16 mx-auto bg-indigo-100 rounded-full flex items-center justify-center mb-6">

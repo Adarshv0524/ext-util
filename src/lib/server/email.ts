@@ -1,14 +1,16 @@
 import { Resend } from 'resend';
 import { env } from '$env/dynamic/private';
 
-export async function sendAdminNotification(newUserEmail: string, newUserName: string) {
-	if (!env.RESEND_API_KEY || !env.ADMIN_EMAILS) {
-		console.warn('Missing RESEND_API_KEY or ADMIN_EMAILS environment variable');
+export async function sendAdminNotification(newUserEmail: string, newUserName: string, adminEmailsOverride?: string) {
+	const finalAdminEmails = adminEmailsOverride || env.ADMIN_EMAILS;
+
+	if (!env.RESEND_API_KEY || !finalAdminEmails) {
+		console.warn('Missing RESEND_API_KEY or ADMIN_EMAILS environment variable / setting');
 		return;
 	}
 
 	const resend = new Resend(env.RESEND_API_KEY);
-	const admins = env.ADMIN_EMAILS.split(',').map(e => e.trim());
+	const admins = finalAdminEmails.split(',').map(e => e.trim());
 
 	try {
 		await resend.emails.send({
