@@ -1,5 +1,5 @@
 import { redirect } from '@sveltejs/kit';
-import { google, generateId } from '$lib/server/auth';
+import { getGoogleOAuth, generateId } from '$lib/server/auth';
 import { sendAdminNotification } from '$lib/server/email';
 import { env } from '$env/dynamic/private';
 import type { RequestHandler } from './$types';
@@ -16,6 +16,7 @@ export const GET: RequestHandler = async (event) => {
 	}
 
 	try {
+		const google = getGoogleOAuth();
 		const tokens = await google.validateAuthorizationCode(code, storedCodeVerifier);
 		
 		const response = await fetch('https://openidconnect.googleapis.com/v1/userinfo', {

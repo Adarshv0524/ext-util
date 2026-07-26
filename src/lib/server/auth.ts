@@ -1,13 +1,14 @@
 import { env } from '$env/dynamic/private';
 import { Google } from 'arctic';
 
-// Initialize Arctic Google OAuth provider
-// This will throw if these are not set in .dev.vars / Cloudflare Environment
-export const google = new Google(
-    env.GOOGLE_CLIENT_ID || '',
-    env.GOOGLE_CLIENT_SECRET || '',
-    (env.APP_URL || 'http://localhost:5173') + '/login/google/callback'
-);
+// Initialize Arctic Google OAuth provider lazily so SvelteKit dynamic env works on Cloudflare
+export function getGoogleOAuth() {
+    return new Google(
+        env.GOOGLE_CLIENT_ID || '',
+        env.GOOGLE_CLIENT_SECRET || '',
+        (env.APP_URL || 'http://localhost:5173') + '/login/google/callback'
+    );
+}
 
 export type User = {
     id: string;
