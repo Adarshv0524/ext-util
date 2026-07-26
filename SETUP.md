@@ -88,37 +88,32 @@ KV is a fast, globally distributed key-value store. We use this to temporarily s
 
 ---
 
-## Step 5: Update `wrangler.json`
+## Step 5: Update `wrangler.toml`
 
 This file is the "magic" that connects your code to Cloudflare without needing passwords or API keys.
 
-1. Open the file named `wrangler.json` in the root of your project.
+1. Open the file named `wrangler.toml` in the root of your project.
 2. Update it with the IDs you copied from Steps 3 and 4:
 
-```json
-{
-  "name": "ext-util",
-  "compatibility_date": "2024-02-28",
-  "r2_buckets": [
-    {
-      "binding": "R2_BUCKET",
-      "bucket_name": "ext-util-media"
-    }
-  ],
-  "kv_namespaces": [
-    {
-      "binding": "TOKEN_KV",
-      "id": "PASTE_YOUR_KV_ID_HERE"
-    }
-  ],
-  "d1_databases": [
-    {
-      "binding": "MEDIA_DB",
-      "database_name": "media_assets_db",
-      "database_id": "PASTE_YOUR_D1_ID_HERE"
-    }
-  ]
-}
+```toml
+name = "ext-util"
+compatibility_date = "2024-07-26" 
+
+# 1. R2 Bucket (Object Storage for Images)
+[[r2_buckets]]
+binding = "R2_BUCKET"
+bucket_name = "ext-util-media"
+
+# 2. KV Namespace (Temporary storage for tokens)
+[[kv_namespaces]]
+binding = "TOKEN_KV"
+id = "PASTE_YOUR_KV_ID_HERE"             # Replace this with the ID from Step 4
+
+# 3. D1 Database (Ledger for tracking assets and orphans)
+[[d1_databases]]
+binding = "MEDIA_DB"
+database_name = "media_assets_db"
+database_id = "PASTE_YOUR_D1_ID_HERE"    # Replace this with the ID from Step 3
 ```
 
 ---

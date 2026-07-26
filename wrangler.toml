@@ -1,0 +1,18 @@
+name = "ext-util"
+compatibility_date = "2024-07-26" 
+
+# 1. R2 Bucket (Object Storage for Images)
+[[r2_buckets]]
+binding = "R2_BUCKET"
+bucket_name = "ext-util-media"
+
+# 2. KV Namespace (Temporary storage for tokens)
+[[kv_namespaces]]
+binding = "TOKEN_KV"
+id = "b44bc5559b134e72933f26648b7efd4b"
+
+# 3. D1 Database (Ledger for tracking assets and orphans)
+[[d1_databases]]
+binding = "MEDIA_DB"
+database_name = "media_assets_db"
+database_id = "5c89ec63-b82e-44f1-8220-19c04fa6acc2" 
