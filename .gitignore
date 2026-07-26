@@ -12,6 +12,7 @@ dist/
 # Environment variables
 .env
 .env.*
+.dev.vars
 !.env.example
 
 # OS / Editor files

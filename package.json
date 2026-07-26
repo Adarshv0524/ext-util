@@ -10,7 +10,8 @@
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-check --tsconfig ./tsconfig.json --watch",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "deploy": "wrangler pages deploy .svelte-kit/cloudflare --project-name ext-util"
   },
   "devDependencies": {
     "@sveltejs/adapter-cloudflare": "^4.0.0",
