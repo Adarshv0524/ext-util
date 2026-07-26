@@ -76,13 +76,32 @@ export const POST: RequestHandler = async ({ request, platform, locals }) => {
 		// 6. Config & Env
 		const env = getEnv(platform?.env);
 
+		// 6.5 Lookup project HMAC secret
+		let hmacSecret = env.HMAC_SECRET;
+		
+		if (project_id && platform?.env?.MEDIA_DB) {
+			try {
+				const db = platform.env.MEDIA_DB;
+				const project = await db.prepare("SELECT hmac_secret FROM projects WHERE project_slug = ?").bind(project_id).first();
+				if (project && project.hmac_secret) {
+					hmacSecret = project.hmac_secret as string;
+				}
+			} catch (e) {
+				console.error("Failed to fetch project hmac:", e);
+			}
+		}
+
+		if (!hmacSecret) {
+			return json({ error: 'System configuration error: No HMAC secret available.' }, { status: 500 });
+		}
+
 		// 7. Sign HMAC token
 		const token = await generateUploadToken(
 			objectKey,
 			userId,
 			mime_type,
 			expiresAtSeconds,
-			env.HMAC_SECRET
+			hmacSecret
 		);
 
 		const cdnUrl = `${env.CDN_BASE_URL}/upload/${objectKey}`;
