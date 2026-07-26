@@ -84,6 +84,7 @@ export const GET: RequestHandler = async (event) => {
 			secure: import.meta.env.PROD,
 			httpOnly: true,
 			maxAge: 60 * 60 * 24 * 30,
+			expires: expiresAt,
 			sameSite: 'lax'
 		});
 
