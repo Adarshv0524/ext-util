@@ -12,7 +12,8 @@ export const POST: RequestHandler = async ({ request, platform, locals }) => {
 			mime_type,
 			file_size_bytes,
 			file_name,
-			uploader_user_id
+			uploader_user_id,
+			project_id
 		} = body;
 
 		// 1. Auth & User ID determination
@@ -53,7 +54,18 @@ export const POST: RequestHandler = async ({ request, platform, locals }) => {
 		const extParts = (file_name || '').split('.');
 		const ext = extParts.length > 1 ? extParts.pop()?.toLowerCase() : 'bin';
 		const randomId = crypto.randomUUID().slice(0, 8);
-		const objectKey = `uploads/${asset_type}/${userId}_${Date.now()}_${randomId}.${ext}`;
+		
+		// Optional project organization
+		let folderPath = '';
+		if (project_id && typeof project_id === 'string') {
+			// Sanitize: allow only alphanumeric and hyphens/underscores, max 32 chars
+			const sanitized = project_id.replace(/[^a-zA-Z0-9-_]/g, '').slice(0, 32);
+			if (sanitized) {
+				folderPath = `${sanitized}/`;
+			}
+		}
+
+		const objectKey = `uploads/${folderPath}${asset_type}/${userId}_${Date.now()}_${randomId}.${ext}`;
 
 		// 5. Expiry calculation
 		const nowSeconds = Math.floor(Date.now() / 1000);

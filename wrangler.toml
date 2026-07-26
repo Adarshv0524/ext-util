@@ -1,5 +1,6 @@
 name = "ext-util"
 compatibility_date = "2024-07-26" 
+pages_build_output_dir = ".svelte-kit/cloudflare"
 
 # 1. R2 Bucket (Object Storage for Images)
 [[r2_buckets]]
