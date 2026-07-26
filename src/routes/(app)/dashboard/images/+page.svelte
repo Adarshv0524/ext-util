@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { PageData } from './$types';
+	import Breadcrumbs from '$lib/components/Breadcrumbs.svelte';
 
 	let { data } = $props<{ data: PageData }>();
 
@@ -10,6 +11,8 @@
 </script>
 
 <div class="p-6 lg:p-8 max-w-6xl mx-auto space-y-8">
+	<Breadcrumbs items={[{ name: 'Dashboard', href: '/dashboard' }, { name: 'My Images' }]} />
+
 	<!-- Page Header -->
 	<div class="flex items-center justify-between">
 		<div>

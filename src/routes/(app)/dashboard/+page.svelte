@@ -2,6 +2,7 @@
 	import { enhance } from '$app/forms';
 	import type { PageData } from './$types';
 	import { fade } from 'svelte/transition';
+	import Breadcrumbs from '$lib/components/Breadcrumbs.svelte';
 
 	export let data: PageData;
 
@@ -14,6 +15,8 @@
 </script>
 
 <div class="p-6 lg:p-8 max-w-4xl mx-auto space-y-8">
+	<Breadcrumbs items={[{ name: 'Dashboard', href: '/dashboard' }, { name: 'Projects' }]} />
+
 	<!-- Page Header -->
 	<div class="flex items-center justify-between">
 		<div>

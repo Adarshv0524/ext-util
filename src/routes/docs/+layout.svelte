@@ -1,6 +1,7 @@
 <script lang="ts">
 	let { data, children } = $props();
 	import { page } from '$app/stores';
+	import Breadcrumbs from '$lib/components/Breadcrumbs.svelte';
 
 	const nav = [
 		{ name: 'Overview', href: '/docs' },
@@ -52,11 +53,10 @@
 		<main class="flex-1 p-6 md:p-12 max-w-3xl">
 			
 			<!-- Breadcrumbs -->
-			<div class="text-sm font-medium text-zinc-500 mb-8 flex items-center gap-2">
-				<a href="/docs" class="hover:text-indigo-700 transition-colors">Docs</a>
-				<span>/</span>
-				<span class="text-zinc-800">{currentPage.name}</span>
-			</div>
+			<Breadcrumbs items={[
+				{ name: 'Docs', href: '/docs' },
+				{ name: currentPage.name }
+			]} />
 
 			<div class="prose prose-sm sm:prose-base max-w-none">
 				{@render children()}
