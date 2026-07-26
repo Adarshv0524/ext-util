@@ -4,6 +4,21 @@
 	import Breadcrumbs from '$lib/components/Breadcrumbs.svelte';
 
 	export let data: PageData;
+
+	let emailList = data.notificationEmails ? data.notificationEmails.split(',').map(e => e.trim()).filter(Boolean) : [];
+	let currentEmail = '';
+
+	function addEmail() {
+		const trimmed = currentEmail.trim();
+		if (trimmed && !emailList.includes(trimmed)) {
+			emailList = [...emailList, trimmed];
+		}
+		currentEmail = '';
+	}
+
+	function removeEmail(email: string) {
+		emailList = emailList.filter(e => e !== email);
+	}
 </script>
 
 <div class="p-6 lg:p-8 max-w-6xl mx-auto space-y-8">
@@ -33,11 +48,23 @@
 			<form method="POST" action="?/updateNotificationEmails" use:enhance class="bg-white p-4 rounded-xl border border-zinc-300 flex flex-col gap-3 shadow-sm w-full">
 				<div>
 					<h3 class="font-bold text-sm text-zinc-900">Notification Emails</h3>
-					<p class="text-xs text-zinc-600">Comma-separated emails to notify on signup</p>
+					<p class="text-xs text-zinc-600">Emails to notify on signup</p>
 				</div>
-				<div class="flex items-center gap-2">
-					<input type="text" name="emails" value={data.notificationEmails} placeholder="admin@example.com" class="flex-1 text-sm bg-zinc-50 border border-zinc-300 rounded px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500" />
-					<button type="submit" class="px-3 py-1.5 bg-zinc-800 text-white text-xs font-bold rounded hover:bg-zinc-700 transition">Save</button>
+				<div class="flex flex-col gap-2">
+					<div class="flex flex-wrap gap-2">
+						{#each emailList as email}
+							<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 border border-indigo-200">
+								{email}
+								<button type="button" class="text-indigo-600 hover:text-indigo-900 font-bold" on:click={() => removeEmail(email)}>&times;</button>
+							</span>
+						{/each}
+					</div>
+					<div class="flex items-center gap-2">
+						<input type="text" bind:value={currentEmail} on:keydown={(e) => e.key === 'Enter' && (e.preventDefault(), addEmail())} placeholder="admin@example.com" class="flex-1 text-sm bg-zinc-50 border border-zinc-300 rounded px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500" />
+						<button type="button" class="px-3 py-1.5 bg-zinc-200 text-zinc-700 text-xs font-bold rounded hover:bg-zinc-300 transition" on:click={addEmail}>Add</button>
+					</div>
+					<input type="hidden" name="emails" value={emailList.join(',')} />
+					<button type="submit" class="mt-2 w-full px-3 py-2 bg-zinc-800 text-white text-xs font-bold rounded hover:bg-zinc-700 transition">Save Settings</button>
 				</div>
 			</form>
 		</div>
