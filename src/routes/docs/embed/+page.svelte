@@ -48,9 +48,19 @@
         <td class="p-3 border-b border-zinc-200">Defaults the HTML export snippet to have a box shadow.</td>
       </tr>
       <tr>
-        <td class="p-3 font-mono text-indigo-700">responsive</td>
-        <td class="p-3">Boolean</td>
-        <td class="p-3">Defaults the HTML export snippet to use responsive widths.</td>
+        <td class="p-3 border-b border-zinc-200 font-mono text-indigo-700">responsive</td>
+        <td class="p-3 border-b border-zinc-200">Boolean</td>
+        <td class="p-3 border-b border-zinc-200">Defaults the HTML export snippet to use responsive widths.</td>
+      </tr>
+      <tr>
+        <td class="p-3 border-b border-zinc-200 font-mono text-indigo-700">accept</td>
+        <td class="p-3 border-b border-zinc-200">String</td>
+        <td class="p-3 border-b border-zinc-200">Overrides the allowed file types (e.g., <code>image/webp,image/png</code>).</td>
+      </tr>
+      <tr>
+        <td class="p-3 font-mono text-indigo-700">maxSize</td>
+        <td class="p-3">Number</td>
+        <td class="p-3">Overrides the max file size in Megabytes (e.g., <code>5</code>). Defaults to 15.</td>
       </tr>
     </tbody>
   </table>

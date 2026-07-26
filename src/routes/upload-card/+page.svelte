@@ -18,6 +18,8 @@
 	// Parameters from URL
 	$: isDemo = $page.url.searchParams.get('demo') === 'true';
 	$: projectId = $page.url.searchParams.get('project_id') || undefined;
+	$: acceptMime = $page.url.searchParams.get('accept') || 'image/png, image/jpeg, image/webp, image/gif, image/avif';
+	$: maxSizeMB = parseFloat($page.url.searchParams.get('maxSize') || '15');
 
 	// HTML Styling Options (Initialized from URL if present)
 	let htmlOptions = {
@@ -64,8 +66,8 @@
 			uploadError = 'Please select a valid image file.';
 			return;
 		}
-		if (file.size > 15 * 1024 * 1024) {
-			uploadError = 'File size exceeds 15MB limit.';
+		if (file.size > maxSizeMB * 1024 * 1024) {
+			uploadError = `File size exceeds ${maxSizeMB}MB limit.`;
 			return;
 		}
 
@@ -233,7 +235,7 @@
 					<span class="mt-4 px-2 py-0.5 bg-yellow-100 text-yellow-800 text-[10px] font-bold rounded uppercase">Demo Mode</span>
 				{/if}
 			{/if}
-			<input bind:this={fileInput} on:change={handleFileSelect} type="file" class="hidden" accept="image/png, image/jpeg, image/webp, image/gif, image/avif" />
+			<input bind:this={fileInput} on:change={handleFileSelect} type="file" class="hidden" accept={acceptMime} />
 		</div>
 	{/if}
 </div>
