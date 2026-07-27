@@ -38,9 +38,12 @@ export const GET = async ({ url, platform }: RequestEvent) => {
 			.run();
 
 		// Send approved email to user
-		platform?.context?.waitUntil(
-			sendUserApprovedEmail(user.email, user.name)
-		);
+		const emailPromise = sendUserApprovedEmail(user.email, user.name);
+		if (platform?.context?.waitUntil) {
+			platform.context.waitUntil(emailPromise);
+		} else {
+			await emailPromise.catch(e => console.error("Email send error:", e));
+		}
 
 		return new Response(`
 			<!DOCTYPE html>

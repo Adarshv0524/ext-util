@@ -72,10 +72,19 @@ export const actions: Actions = {
 
 		// Only send email if status actually changed
 		if (user.status !== newStatus) {
+			let emailPromise: Promise<void> | null = null;
 			if (newStatus === 'APPROVED') {
-				platform?.context?.waitUntil(sendUserApprovedEmail(user.email, user.name));
+				emailPromise = sendUserApprovedEmail(user.email, user.name);
 			} else if (newStatus === 'BANNED') {
-				platform?.context?.waitUntil(sendUserBannedEmail(user.email, user.name));
+				emailPromise = sendUserBannedEmail(user.email, user.name);
+			}
+			
+			if (emailPromise) {
+				if (platform?.context?.waitUntil) {
+					platform.context.waitUntil(emailPromise);
+				} else {
+					await emailPromise.catch(e => console.error("Email send error:", e));
+				}
 			}
 		}
 

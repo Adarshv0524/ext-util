@@ -96,6 +96,8 @@
 				<a href="mailto:theawadhilanguage@gmail.com" class="text-xs font-medium text-zinc-500 hover:text-zinc-900 transition flex-1 text-center">Support</a>
 				<span class="text-zinc-400">•</span>
 				<a href="/docs" target="_blank" class="text-xs font-medium text-zinc-500 hover:text-zinc-900 transition flex-1 text-center">Docs</a>
+				<span class="text-zinc-400">•</span>
+				<a href="/logout" class="text-xs font-medium text-red-500 hover:text-red-700 transition flex-1 text-center">Logout</a>
 			</div>
 		</div>
 	</aside>

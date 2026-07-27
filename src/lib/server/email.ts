@@ -1,7 +1,7 @@
 import { Resend } from 'resend';
 import { env } from '$env/dynamic/private';
 
-const defaultSender = 'Avadhya ImgAPI <onboarding@resend.dev>'; // Update this to your verified domain in production
+const defaultSender = env.EMAIL_FROM || 'ImgAPI <noreply@imgapi.avadhya.in>';
 
 export async function sendAdminNotification(newUserEmail: string, newUserName: string, adminEmailsOverride?: string, approvalUrl?: string) {
 	const finalAdminEmails = adminEmailsOverride || env.ADMIN_EMAILS;
@@ -163,7 +163,7 @@ export async function sendUserApprovedEmail(userEmail: string, userName: string)
 						Your access request has been approved. You can now log in and start using imgapi.
 					</p>
 					<div style="margin: 32px 0;">
-						<a href="\${appUrl}/dashboard" style="background-color: #4f46e5; color: #fff; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: 500; display: inline-block;">Go to Dashboard</a>
+						<a href="${appUrl}/dashboard" style="background-color: #4f46e5; color: #fff; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: 500; display: inline-block;">Go to Dashboard</a>
 					</div>
 					<p style="font-size: 14px; color: #94a3b8;">
 						Happy building!<br/>The imgapi Team

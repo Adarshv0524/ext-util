@@ -76,22 +76,26 @@ export const GET: RequestHandler = async (event) => {
 			}
 
 			// Send appropriate emails
-			if (status === 'PENDING') {
-				const approvalUrl = `${env.APP_URL || 'http://localhost:5173'}/api/auth/approve-from-email?token=${approvalToken}&userId=${userId}`;
-				event.platform?.context?.waitUntil(
-					Promise.all([
-						sendAdminNotification(googleUser.email, googleUser.name, adminEmailsOverride, approvalUrl),
-						sendWelcomePendingEmail(googleUser.email, googleUser.name)
-					])
-				);
+			const emailPromises = status === 'PENDING'
+				? Promise.all([
+					sendAdminNotification(
+						googleUser.email,
+						googleUser.name,
+						adminEmailsOverride,
+						`${env.APP_URL || 'http://localhost:5173'}/api/auth/approve-from-email?token=${approvalToken}&userId=${userId}`
+					),
+					sendWelcomePendingEmail(googleUser.email, googleUser.name)
+				])
+				: Promise.all([
+					sendAdminNotification(googleUser.email, googleUser.name, adminEmailsOverride),
+					sendUserApprovedEmail(googleUser.email, googleUser.name)
+				]);
+
+			if (event.platform?.context?.waitUntil) {
+				event.platform.context.waitUntil(emailPromises);
 			} else {
-				// Auto-approved
-				event.platform?.context?.waitUntil(
-					Promise.all([
-						sendAdminNotification(googleUser.email, googleUser.name, adminEmailsOverride),
-						sendUserApprovedEmail(googleUser.email, googleUser.name)
-					])
-				);
+				// Local dev fallback - await to prevent promise from being killed
+				await emailPromises.catch(e => console.error("Email send error:", e));
 			}
 		}
 
